@@ -23,8 +23,32 @@ RULES:
 
 Respond ONLY with valid JSON: {"optimized": "improved prompt here", "fixes": ["short description of each fix"]}. No markdown, no backticks, just raw JSON.`;
 
+const CHAT_INSTRUCTIONS: Record<string, string> = {
+  ChatGPT:
+    "ChatGPT tends to be verbose, so add 'Be concise' constraints. It responds well to step-by-step instructions.",
+  Claude:
+    "Claude is excellent at following structured prompts with XML tags. Add format constraints. Remind it to not over-explain.",
+  Gemini:
+    "Gemini is prone to hallucination, so add 'Only use verified information' and 'If unsure, say so'. It benefits from very specific questions.",
+  Copilot:
+    "Copilot is slow and has limited context, so make the prompt ultra-concise and specific. Break complex tasks into smaller chunks.",
+};
+
+const PRODUCT_INSTRUCTIONS: Record<string, string> = {
+  Email:
+    "The output is an email — the prompt should specify tone, recipient, subject line, length, and call to action.",
+  Excel:
+    "The output is for Excel — the prompt should specify columns, data structure, formulas needed, and sample data format.",
+  PowerPoint:
+    "The output is for PowerPoint — the prompt should specify number of slides, audience, key message per slide, and visual style.",
+  Document:
+    "The output is a document — the prompt should specify sections, length, formatting, audience, and purpose.",
+  General:
+    "No specific output format constraints — optimize for clarity and precision.",
+};
+
 export async function POST(req: NextRequest) {
-  const { prompt, role, goal, name } = await req.json();
+  const { prompt, role, goal, name, selectedChat, selectedProduct } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
@@ -41,17 +65,25 @@ export async function POST(req: NextRequest) {
     role: role || null,
     goal: goal || null,
     name: name || null,
+    selectedChat: selectedChat || null,
+    selectedProduct: selectedProduct || null,
   });
 
   const contextParts: string[] = [];
   if (role) contextParts.push(`User role: ${role}`);
   if (goal) contextParts.push(`User goal: ${goal}`);
   if (name) contextParts.push(`User name: ${name}`);
-  const contextBlock =
-    contextParts.length > 0
-      ? `\n\nContext about the user:\n${contextParts.join("\n")}`
-      : "";
 
+  const chat = selectedChat || "ChatGPT";
+  const product = selectedProduct || "General";
+  contextParts.push(
+    `Target AI: ${chat}. ${CHAT_INSTRUCTIONS[chat] ?? ""}`
+  );
+  contextParts.push(
+    `Output type: ${product}. ${PRODUCT_INSTRUCTIONS[product] ?? ""}`
+  );
+
+  const contextBlock = `\n\nContext:\n${contextParts.join("\n")}`;
   const userMessage = `${prompt}${contextBlock}`;
 
   let response: Response;
@@ -97,7 +129,6 @@ export async function POST(req: NextRequest) {
     parsed = JSON.parse(raw);
   } catch {
     console.error("[optimize] JSON parse failed, raw:", raw.slice(0, 300));
-    // Fallback: treat entire response as optimized prompt with no fixes
     return NextResponse.json({ result: raw, fixes: [] });
   }
 

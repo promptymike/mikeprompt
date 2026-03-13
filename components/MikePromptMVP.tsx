@@ -66,6 +66,8 @@ const MikePromptMVP = () => {
   const [userName, setUserName] = useState("");
   const [dailyCount, setDailyCount] = useState(0);
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
+  const [selectedChat, setSelectedChat] = useState("ChatGPT");
+  const [selectedProduct, setSelectedProduct] = useState("General");
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -92,6 +94,8 @@ const MikePromptMVP = () => {
           role: role || undefined,
           goal: goal || undefined,
           name: userName || undefined,
+          selectedChat,
+          selectedProduct,
         }),
       });
       const data = await response.json();
@@ -232,7 +236,7 @@ const MikePromptMVP = () => {
             better.
           </h1>
           <p style={{ fontSize: 17, color: "#6B6560", maxWidth: 480, margin: "0 auto 12px", lineHeight: 1.6 }}>
-            Not another chatbot. Mike polishes your prompts so every AI gives you better answers — first try.
+            Not another chatbot. Mike polishes your prompts so every AI gives you better answers.
           </p>
           <p style={{ fontSize: 13, color: "#B0A89E", marginBottom: 8 }}>
             Works with ChatGPT · Claude · Gemini · Copilot · any AI
@@ -312,6 +316,83 @@ const MikePromptMVP = () => {
                 minHeight: 100,
               }}
             />
+          </div>
+
+          {/* ── Chat & Product selectors ── */}
+          <div style={{
+            padding: "12px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
+            display: "flex", flexDirection: "column", gap: 10,
+          }}>
+            {/* Chat selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 80 }}>
+                Optimize for:
+              </span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["ChatGPT", "Claude", "Gemini", "Copilot"].map((chat) => (
+                  <button
+                    key={chat}
+                    onClick={() => setSelectedChat(chat)}
+                    style={{
+                      padding: "5px 12px", borderRadius: 100,
+                      border: selectedChat === chat
+                        ? "1px solid #FF8A65"
+                        : "1px solid rgba(0,0,0,0.08)",
+                      background: selectedChat === chat
+                        ? "rgba(255,110,64,0.07)"
+                        : "white",
+                      fontSize: 12,
+                      color: selectedChat === chat ? "#FF6E40" : "#A09890",
+                      fontWeight: selectedChat === chat ? 600 : 400,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {chat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Product selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 80 }}>
+                Output for:
+              </span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "📧 Email", value: "Email" },
+                  { label: "📊 Excel", value: "Excel" },
+                  { label: "📑 PowerPoint", value: "PowerPoint" },
+                  { label: "📄 Document", value: "Document" },
+                  { label: "💬 General", value: "General" },
+                ].map(({ label, value }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSelectedProduct(value)}
+                    style={{
+                      padding: "5px 12px", borderRadius: 100,
+                      border: selectedProduct === value
+                        ? "1px solid #FF8A65"
+                        : "1px solid rgba(0,0,0,0.08)",
+                      background: selectedProduct === value
+                        ? "rgba(255,110,64,0.07)"
+                        : "white",
+                      fontSize: 12,
+                      color: selectedProduct === value ? "#FF6E40" : "#A09890",
+                      fontWeight: selectedProduct === value ? 600 : 400,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Trust badge */}
+            <p style={{ fontSize: 12, color: "#C0B8B0", textAlign: "center", marginTop: 2 }}>
+              🔒 Your prompts are not stored · Powered by Claude · Works with every AI
+            </p>
           </div>
 
           {/* Action bar */}
