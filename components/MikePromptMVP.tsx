@@ -102,6 +102,7 @@ const MikePromptMVP = () => {
   const [goal, setGoal] = useState("");
   const [userName, setUserName] = useState("");
   const [dailyCount, setDailyCount] = useState(0);
+  const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -136,6 +137,7 @@ const MikePromptMVP = () => {
       setOptimized(result);
       setFixes(Array.isArray(data.fixes) ? data.fixes : []);
       setProTip(PRO_TIPS[Math.floor(Math.random() * PRO_TIPS.length)]);
+      setFeedback(null);
       setShowResults(true);
       setUsageCount((prev) => prev + 1);
       const newCount = incrementStoredCount();
@@ -150,6 +152,18 @@ const MikePromptMVP = () => {
   };
 
   const copyText = (text: string) => navigator.clipboard.writeText(text);
+
+  const handleFeedback = (type: "positive" | "negative") => {
+    setFeedback(type);
+    console.log({
+      timestamp: new Date().toISOString(),
+      original_prompt: input,
+      optimized_prompt: optimized,
+      feedback: type,
+      user_role: role || null,
+      user_goal: goal || null,
+    });
+  };
 
   const inputTokens = estimateTokens(input);
   const outputTokens = estimateTokens(optimized);
@@ -692,6 +706,61 @@ const MikePromptMVP = () => {
                 </div>
               </div>
             )}
+
+            {/* ── Feedback ── */}
+            <div style={{
+              padding: "16px 24px",
+              borderTop: "1px solid rgba(0,0,0,0.04)",
+              display: "flex", alignItems: "center", gap: 12,
+            }}>
+              {feedback ? (
+                <span style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>
+                  Thanks for feedback!
+                </span>
+              ) : (
+                <>
+                  <span style={{ fontSize: 13, color: "#A09890" }}>Was this helpful?</span>
+                  <button
+                    onClick={() => handleFeedback("positive")}
+                    style={{
+                      padding: "6px 14px", borderRadius: 10,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      background: "white", fontSize: 16, cursor: "pointer",
+                      transition: "all 0.18s",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = "#43A047";
+                      e.currentTarget.style.background = "rgba(67,160,71,0.06)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+                      e.currentTarget.style.background = "white";
+                    }}
+                  >
+                    👍
+                  </button>
+                  <button
+                    onClick={() => handleFeedback("negative")}
+                    style={{
+                      padding: "6px 14px", borderRadius: 10,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      background: "white", fontSize: 16, cursor: "pointer",
+                      transition: "all 0.18s",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = "#E53935";
+                      e.currentTarget.style.background = "rgba(229,57,53,0.06)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+                      e.currentTarget.style.background = "white";
+                    }}
+                  >
+                    👎
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -804,8 +873,29 @@ const MikePromptMVP = () => {
         </div>
 
         {/* Footer */}
-        <footer style={{ marginTop: 60, paddingBottom: 32, textAlign: "center", fontSize: 13, color: "#A09890" }}>
-          Built with 🧡 in Warsaw · mikeprompt.com
+        <footer style={{
+          marginTop: 60, paddingBottom: 32,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          flexWrap: "wrap", gap: 8,
+          fontSize: 13, color: "#A09890",
+        }}>
+          <span>Built with 🧡 in Warsaw</span>
+          <div style={{ display: "flex", gap: 16 }}>
+            <a href="https://x.com/mikeprompt" target="_blank" rel="noopener noreferrer"
+              style={{ color: "#A09890", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseOver={(e) => ((e.target as HTMLAnchorElement).style.color = "#FF6E40")}
+              onMouseOut={(e) => ((e.target as HTMLAnchorElement).style.color = "#A09890")}
+            >
+              Twitter
+            </a>
+            <a href="mailto:hello@mikeprompt.com"
+              style={{ color: "#A09890", textDecoration: "none", transition: "color 0.2s" }}
+              onMouseOver={(e) => ((e.target as HTMLAnchorElement).style.color = "#FF6E40")}
+              onMouseOut={(e) => ((e.target as HTMLAnchorElement).style.color = "#A09890")}
+            >
+              Contact
+            </a>
+          </div>
         </footer>
       </main>
       <style>{`
