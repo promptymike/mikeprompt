@@ -48,7 +48,7 @@ const PRODUCT_INSTRUCTIONS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const { prompt, role, goal, name, selectedChat, selectedProduct } = await req.json();
+  const { prompt, role, goal, name, selectedChat, selectedProduct, lang } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
     name: name || null,
     selectedChat: selectedChat || null,
     selectedProduct: selectedProduct || null,
+    lang: lang || null,
   });
 
   const contextParts: string[] = [];
@@ -76,12 +77,11 @@ export async function POST(req: NextRequest) {
 
   const chat = selectedChat || "ChatGPT";
   const product = selectedProduct || "General";
-  contextParts.push(
-    `Target AI: ${chat}. ${CHAT_INSTRUCTIONS[chat] ?? ""}`
-  );
-  contextParts.push(
-    `Output type: ${product}. ${PRODUCT_INSTRUCTIONS[product] ?? ""}`
-  );
+  contextParts.push(`Target AI: ${chat}. ${CHAT_INSTRUCTIONS[chat] ?? ""}`);
+  contextParts.push(`Output type: ${product}. ${PRODUCT_INSTRUCTIONS[product] ?? ""}`);
+  if (lang === "pl") {
+    contextParts.push("IMPORTANT: Respond entirely in Polish (język polski). The improved prompt should also be written in Polish.");
+  }
 
   const contextBlock = `\n\nContext:\n${contextParts.join("\n")}`;
   const userMessage = `${prompt}${contextBlock}`;

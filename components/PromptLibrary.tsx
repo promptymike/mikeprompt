@@ -105,7 +105,21 @@ const LIBRARY: LibraryPrompt[] = [
   },
 ];
 
-const CATEGORIES = ["All", "Finance & FP&A", "Sales", "Admin & Operations", "Accounting", "Management"];
+type Lang = "en" | "pl";
+
+const CATEGORIES_EN = ["All", "Finance & FP&A", "Sales", "Admin & Operations", "Accounting", "Management"];
+const CATEGORIES_PL = ["Wszystkie", "Finanse i FP&A", "Sprzedaż", "Admin i Operacje", "Księgowość", "Zarządzanie"];
+const CATEGORY_MAP: Record<string, string> = {
+  "All": "Wszystkie",
+  "Finance & FP&A": "Finanse i FP&A",
+  "Sales": "Sprzedaż",
+  "Admin & Operations": "Admin i Operacje",
+  "Accounting": "Księgowość",
+  "Management": "Zarządzanie",
+};
+const CATEGORY_MAP_REVERSE: Record<string, string> = Object.fromEntries(
+  Object.entries(CATEGORY_MAP).map(([k, v]) => [v, k])
+);
 
 const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   "Any AI":  { bg: "rgba(0,0,0,0.03)",        color: "#A09890",  border: "rgba(0,0,0,0.06)" },
@@ -115,9 +129,10 @@ const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> 
 
 interface PromptLibraryProps {
   onPolish: (prompt: string) => void;
+  lang?: Lang;
 }
 
-const PromptCard = ({ p, onPolish }: { p: LibraryPrompt; onPolish: (prompt: string) => void }) => {
+const PromptCard = ({ p, onPolish, lang = "en" }: { p: LibraryPrompt; onPolish: (prompt: string) => void; lang?: Lang }) => {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -189,7 +204,7 @@ const PromptCard = ({ p, onPolish }: { p: LibraryPrompt; onPolish: (prompt: stri
                 cursor: "pointer", fontWeight: 500, transition: "all 0.18s",
               }}
             >
-              {copied ? "✓ Copied!" : "📋 Copy"}
+              {copied ? (lang === "pl" ? "✓ Skopiowano!" : "✓ Copied!") : (lang === "pl" ? "📋 Kopiuj" : "📋 Copy")}
             </button>
             <button
               onClick={() => onPolish(p.prompt)}
@@ -207,7 +222,7 @@ const PromptCard = ({ p, onPolish }: { p: LibraryPrompt; onPolish: (prompt: stri
                 e.currentTarget.style.background = "rgba(255,110,64,0.05)";
               }}
             >
-              🔧 Polish it
+              {lang === "pl" ? "🔧 Wypoleruj" : "🔧 Polish it"}
             </button>
           </div>
         </div>
@@ -216,12 +231,19 @@ const PromptCard = ({ p, onPolish }: { p: LibraryPrompt; onPolish: (prompt: stri
   );
 };
 
-export default function PromptLibrary({ onPolish }: PromptLibraryProps) {
+export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch] = useState("");
 
+  const CATEGORIES = lang === "pl" ? CATEGORIES_PL : CATEGORIES_EN;
+
+  // Resolve to English category for filtering
+  const activeCategoryEn = lang === "pl"
+    ? (activeCategory === "Wszystkie" ? "All" : (CATEGORY_MAP_REVERSE[activeCategory] ?? activeCategory))
+    : activeCategory;
+
   const filtered = LIBRARY.filter((p) => {
-    const matchCat = activeCategory === "All" || p.category === activeCategory;
+    const matchCat = activeCategoryEn === "All" || p.category === activeCategoryEn;
     const q = search.toLowerCase();
     const matchSearch = !q || p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
     return matchCat && matchSearch;
@@ -242,7 +264,7 @@ export default function PromptLibrary({ onPolish }: PromptLibraryProps) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search prompts…"
+          placeholder={lang === "pl" ? "Szukaj promptów…" : "Search prompts…"}
           style={{
             padding: "10px 16px", borderRadius: 12,
             border: "1px solid rgba(0,0,0,0.08)",
@@ -278,7 +300,7 @@ export default function PromptLibrary({ onPolish }: PromptLibraryProps) {
       {/* Prompt groups */}
       {Object.keys(grouped).length === 0 ? (
         <p style={{ textAlign: "center", color: "#C0B8B0", fontSize: 14, padding: "40px 0" }}>
-          No prompts found.
+          {lang === "pl" ? "Nie znaleziono promptów." : "No prompts found."}
         </p>
       ) : (
         Object.entries(grouped).map(([category, prompts]) => {
@@ -291,7 +313,7 @@ export default function PromptLibrary({ onPolish }: PromptLibraryProps) {
               }}>
                 <span style={{ fontSize: 16 }}>{icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#6B6560", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  {category}
+                  {lang === "pl" ? (CATEGORY_MAP[category] ?? category) : category}
                 </span>
                 <span style={{
                   fontSize: 11, color: "#C0B8B0",
@@ -303,7 +325,7 @@ export default function PromptLibrary({ onPolish }: PromptLibraryProps) {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {prompts.map((p) => (
-                  <PromptCard key={p.id} p={p} onPolish={onPolish} />
+                  <PromptCard key={p.id} p={p} onPolish={onPolish} lang={lang} />
                 ))}
               </div>
             </div>

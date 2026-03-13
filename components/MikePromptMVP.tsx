@@ -2,19 +2,129 @@
 
 import { useState, useEffect, useRef } from "react";
 import PromptLibrary from "./PromptLibrary";
+import UseCases from "./UseCases";
+
+type Lang = "en" | "pl";
+
+const T = {
+  en: {
+    tagline: "AI for humans",
+    tab_polish: "✨ Polish",
+    tab_library: "📚 Library",
+    tab_usecases: "💡 Use Cases",
+    polished_today_single: "prompt polished today",
+    polished_today_plural: "prompts polished today",
+    free_left: "free polishes left",
+    sign_up_more: "Sign up for more",
+    headline_pre: "AI that makes ",
+    headline_accent: "YOU",
+    headline_post: " better.",
+    subheadline: "Not another chatbot. Mike polishes your prompts so every AI gives you better answers.",
+    works_with: "Works with ChatGPT · Claude · Gemini · Copilot · any AI",
+    stat: "The average worker wastes 23 min/day retrying AI prompts.",
+    try_example: "Try an example:",
+    placeholder: "Type or paste your prompt here…",
+    optimize_for: "Optimize for:",
+    output_for: "Output for:",
+    trust_badge: "🔒 Your prompts are not stored · Powered by Claude · Works with every AI",
+    chars_hint: (n: number) => `${n} chars`,
+    paste_hint: "Paste anything — Mike handles the rest",
+    polish_btn: "🔧 Polish it",
+    thinking: "Mike is thinking...",
+    personalise: "🎯 Personalise for better results",
+    your_role: "Your role",
+    select_role: "Select role…",
+    your_goal: "Your goal",
+    goal_placeholder: "e.g. save time on reports",
+    your_name: "Your name",
+    name_placeholder: "e.g. Anna",
+    used_all: (n: number) => `You've used all ${n} free polishes. Drop your email to unlock more.`,
+    unlock: "Unlock more",
+    network_error: "Something went wrong. Please try again.",
+    mikes_version: "Mike's polished version",
+    copy_prompt: "📋 Copy prompt",
+    more_precise: (n: number) => `✨ Mike made your prompt ${n}% more precise`,
+    what_fixed: "What Mike fixed",
+    pro_tip_label: "Pro tip: ",
+    was_helpful: "Was this helpful?",
+    thanks_feedback: "Thanks for feedback!",
+    like_mike: "🧡 Like Mike? Join the waitlist for Pro features.",
+    join: "Join",
+    on_list: "🎉 You're on the list! Mike will be in touch.",
+    footer: "Made in Warsaw 🇵🇱 · Works with every AI chat · ",
+  },
+  pl: {
+    tagline: "AI dla ludzi",
+    tab_polish: "✨ Poleruj",
+    tab_library: "📚 Biblioteka",
+    tab_usecases: "💡 Zastosowania",
+    polished_today_single: "prompt wypolerowany dziś",
+    polished_today_plural: "promptów wypolerowanych dziś",
+    free_left: "darmowych polerów",
+    sign_up_more: "Zarejestruj się po więcej",
+    headline_pre: "AI, które sprawia że jesteś ",
+    headline_accent: "LEPSZY",
+    headline_post: ".",
+    subheadline: "To nie kolejny chatbot. Mike szlifuje Twoje prompty żeby każde AI dawało lepsze odpowiedzi.",
+    works_with: "Działa z ChatGPT · Claude · Gemini · Copilot · każdym AI",
+    stat: "Przeciętny pracownik traci 23 min/dzień na ponowne próby z AI.",
+    try_example: "Wypróbuj przykład:",
+    placeholder: "Wpisz lub wklej swój prompt tutaj…",
+    optimize_for: "Optymalizuj dla:",
+    output_for: "Wynik dla:",
+    trust_badge: "🔒 Twoje prompty nie są przechowywane · Powered by Claude · Działa z każdym AI",
+    chars_hint: (n: number) => `${n} znaków`,
+    paste_hint: "Wklej cokolwiek — Mike zajmie się resztą",
+    polish_btn: "🔧 Wypoleruj",
+    thinking: "Mike myśli...",
+    personalise: "🎯 Personalizuj dla lepszych wyników",
+    your_role: "Twoja rola",
+    select_role: "Wybierz rolę…",
+    your_goal: "Twój cel",
+    goal_placeholder: "np. oszczędzaj czas na raportach",
+    your_name: "Twoje imię",
+    name_placeholder: "np. Anna",
+    used_all: (n: number) => `Wykorzystałeś wszystkie ${n} darmowe polery. Podaj email, żeby odblokować więcej.`,
+    unlock: "Odblokuj więcej",
+    network_error: "Coś poszło nie tak. Spróbuj ponownie.",
+    mikes_version: "Wypolerowana wersja Mike'a",
+    copy_prompt: "📋 Kopiuj prompt",
+    more_precise: (n: number) => `✨ Mike sprawił, że Twój prompt jest o ${n}% precyzyjniejszy`,
+    what_fixed: "Co Mike poprawił",
+    pro_tip_label: "Pro tip: ",
+    was_helpful: "Czy to było pomocne?",
+    thanks_feedback: "Dzięki za opinię!",
+    like_mike: "🧡 Podoba Ci się Mike? Dołącz do listy oczekujących na Pro.",
+    join: "Dołącz",
+    on_list: "🎉 Jesteś na liście! Mike się odezwie.",
+    footer: "Made in Warsaw 🇵🇱 · Działa z każdym AI · ",
+  },
+};
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
-const EXAMPLE_CHIPS = [
-  { icon: "📊", label: "budget report", prompt: "write a budget report" },
-  { icon: "📧", label: "supplier email", prompt: "write email to supplier about late delivery" },
-  { icon: "📋", label: "meeting agenda", prompt: "prepare meeting agenda for Monday" },
-  { icon: "🧮", label: "invoice issue", prompt: "explain this invoice discrepancy to client" },
-  { icon: "💼", label: "performance review", prompt: "write performance review for team member" },
-  { icon: "🤝", label: "cold outreach to CFO", prompt: "prepare cold outreach message for CFO" },
-  { icon: "📊", label: "quarterly costs", prompt: "analyze quarterly costs" },
-  { icon: "💼", label: "project update", prompt: "create project status update for stakeholders" },
-];
+const EXAMPLE_CHIPS = {
+  en: [
+    { icon: "📊", label: "budget report", prompt: "write a budget report" },
+    { icon: "📧", label: "supplier email", prompt: "write email to supplier about late delivery" },
+    { icon: "📋", label: "meeting agenda", prompt: "prepare meeting agenda for Monday" },
+    { icon: "🧮", label: "invoice issue", prompt: "explain this invoice discrepancy to client" },
+    { icon: "💼", label: "performance review", prompt: "write performance review for team member" },
+    { icon: "🤝", label: "cold outreach to CFO", prompt: "prepare cold outreach message for CFO" },
+    { icon: "📊", label: "quarterly costs", prompt: "analyze quarterly costs" },
+    { icon: "💼", label: "project update", prompt: "create project status update for stakeholders" },
+  ],
+  pl: [
+    { icon: "📊", label: "raport budżetowy", prompt: "napisz raport budżetowy" },
+    { icon: "📧", label: "email do dostawcy", prompt: "napisz email do dostawcy o opóźnionej dostawie" },
+    { icon: "📋", label: "agenda spotkania", prompt: "przygotuj agendę spotkania na poniedziałek" },
+    { icon: "🧮", label: "problem z fakturą", prompt: "wyjaśnij rozbieżność na fakturze klientowi" },
+    { icon: "💼", label: "ocena pracownicza", prompt: "napisz ocenę pracowniczą dla członka zespołu" },
+    { icon: "🤝", label: "cold email do CFO", prompt: "przygotuj wiadomość cold outreach do CFO" },
+    { icon: "📊", label: "koszty kwartalne", prompt: "przeanalizuj koszty kwartalne" },
+    { icon: "💼", label: "aktualizacja projektu", prompt: "utwórz aktualizację statusu projektu dla interesariuszy" },
+  ],
+};
 
 const ROLES = ["Finance", "Admin", "Accounting", "Sales", "Management", "HR", "Other"];
 
@@ -37,12 +147,10 @@ const PRO_TIPS = [
 ];
 
 const TODAY_KEY = () => `mikeprompt_count_${new Date().toISOString().slice(0, 10)}`;
-
 const getStoredCount = (): number => {
   if (typeof window === "undefined") return 0;
   return parseInt(localStorage.getItem(TODAY_KEY()) ?? "0", 10);
 };
-
 const incrementStoredCount = (): number => {
   const next = getStoredCount() + 1;
   localStorage.setItem(TODAY_KEY(), String(next));
@@ -69,14 +177,25 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "library">("polish");
+  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases">("polish");
+  const [lang, setLang] = useState<Lang>("en");
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
   useEffect(() => {
     setVisible(true);
     setDailyCount(getStoredCount());
+    const stored = localStorage.getItem("mikeprompt_lang");
+    if (stored === "pl" || stored === "en") setLang(stored);
   }, []);
+
+  const toggleLang = () => {
+    const next: Lang = lang === "en" ? "pl" : "en";
+    setLang(next);
+    localStorage.setItem("mikeprompt_lang", next);
+  };
+
+  const t = T[lang];
 
   const optimizePrompt = async () => {
     if (!input.trim()) return;
@@ -98,6 +217,7 @@ const MikePromptMVP = () => {
           name: userName || undefined,
           selectedChat,
           selectedProduct,
+          lang,
         }),
       });
       const data = await response.json();
@@ -136,10 +256,19 @@ const MikePromptMVP = () => {
 
   const inputTokens = estimateTokens(input);
   const outputTokens = estimateTokens(optimized);
-  const precisionGain =
-    outputTokens > 0
-      ? Math.abs(Math.round(((outputTokens - inputTokens) / outputTokens) * 100))
-      : 0;
+  const precisionGain = outputTokens > 0
+    ? Math.abs(Math.round(((outputTokens - inputTokens) / outputTokens) * 100))
+    : 0;
+
+  const submitWaitlist = async (onSuccess: () => void) => {
+    if (!email) return;
+    await fetch("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role: role || undefined, goal: goal || undefined, name: userName || undefined }),
+    });
+    onSuccess();
+  };
 
   return (
     <div style={{
@@ -169,12 +298,14 @@ const MikePromptMVP = () => {
       {/* Nav */}
       <nav style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "20px 40px", position: "relative", zIndex: 10,
+        padding: "20px 24px", position: "relative", zIndex: 10,
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(-20px)",
         transition: "all 0.8s ease",
         maxWidth: 1200, margin: "0 auto",
+        flexWrap: "wrap", gap: 12,
       }}>
+        {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
             width: 40, height: 40, borderRadius: 12,
@@ -189,7 +320,7 @@ const MikePromptMVP = () => {
               mike<span style={{ color: "#FF6E40" }}>prompt</span>
             </span>
             <div style={{ fontSize: 11, color: "#C0B8B0", fontWeight: 400, letterSpacing: "0.2px", marginTop: -2 }}>
-              AI for humans
+              {t.tagline}
             </div>
           </div>
         </div>
@@ -199,18 +330,23 @@ const MikePromptMVP = () => {
           display: "flex", gap: 4,
           background: "rgba(0,0,0,0.04)", borderRadius: 10, padding: 4,
         }}>
-          {([["polish", "✨ Polish"], ["library", "📚 Library"]] as const).map(([tab, label]) => (
+          {([
+            ["polish", t.tab_polish],
+            ["library", t.tab_library],
+            ["usecases", t.tab_usecases],
+          ] as const).map(([tab, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                padding: "6px 14px", borderRadius: 7, border: "none",
+                padding: "6px 13px", borderRadius: 7, border: "none",
                 background: activeTab === tab ? "white" : "transparent",
                 color: activeTab === tab ? "#2D2A26" : "#A09890",
                 fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
                 cursor: "pointer",
                 boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
                 transition: "all 0.18s",
+                whiteSpace: "nowrap",
               }}
             >
               {label}
@@ -218,21 +354,37 @@ const MikePromptMVP = () => {
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* Right side: counter + polishes + lang toggle */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           {dailyCount > 0 && (
             <div style={{
               fontSize: 13, color: "#FF6E40", fontWeight: 600,
               background: "rgba(255,110,64,0.08)", borderRadius: 100,
               padding: "4px 12px",
             }}>
-              🔥 {dailyCount} prompt{dailyCount !== 1 ? "s" : ""} polished today
+              🔥 {dailyCount} {dailyCount !== 1 ? t.polished_today_plural : t.polished_today_single}
             </div>
           )}
           <div style={{ fontSize: 13, color: "#A09890", fontWeight: 500 }}>
             {MAX_FREE - usageCount > 0
-              ? `${MAX_FREE - usageCount} free polishes left`
-              : "Sign up for more"}
+              ? `${MAX_FREE - usageCount} ${t.free_left}`
+              : t.sign_up_more}
           </div>
+          {/* Language toggle */}
+          <button
+            onClick={toggleLang}
+            style={{
+              padding: "4px 10px", borderRadius: 8,
+              border: "1px solid rgba(0,0,0,0.08)",
+              background: "white", fontSize: 12, fontWeight: 600,
+              color: "#A09890", cursor: "pointer", transition: "all 0.15s",
+              letterSpacing: "0.3px",
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.color = "#A09890"; }}
+          >
+            {lang === "en" ? "PL" : "EN"}
+          </button>
         </div>
       </nav>
 
@@ -242,9 +394,24 @@ const MikePromptMVP = () => {
         position: "relative", zIndex: 5,
       }}>
 
+        {/* ── Use Cases tab ── */}
+        {activeTab === "usecases" && (
+          <UseCases
+            lang={lang}
+            onTryNow={(prompt) => {
+              setInput(prompt);
+              setActiveTab("polish");
+              setShowResults(false);
+              setOptimized("");
+              setFixes([]);
+            }}
+          />
+        )}
+
         {/* ── Library tab ── */}
         {activeTab === "library" && (
           <PromptLibrary
+            lang={lang}
             onPolish={(prompt) => {
               setInput(prompt);
               setActiveTab("polish");
@@ -255,586 +422,538 @@ const MikePromptMVP = () => {
           />
         )}
 
+        {/* ── Polish tab ── */}
         {activeTab === "polish" && (<>
-        {/* Hero */}
-        <div style={{
-          textAlign: "center", marginBottom: 16,
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(20px)",
-          transition: "all 0.8s ease 0.2s",
-        }}>
-          <h1 style={{
-            fontFamily: "'Fraunces', serif",
-            fontSize: "clamp(34px, 6vw, 56px)",
-            fontWeight: 700, lineHeight: 1.1, marginBottom: 16, letterSpacing: "-1.5px",
+          {/* Hero */}
+          <div style={{
+            textAlign: "center", marginBottom: 16,
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(20px)",
+            transition: "all 0.8s ease 0.2s",
           }}>
-            AI that makes{" "}
-            <span style={{
-              background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            <h1 style={{
+              fontFamily: "'Fraunces', serif",
+              fontSize: "clamp(34px, 6vw, 56px)",
+              fontWeight: 700, lineHeight: 1.1, marginBottom: 16, letterSpacing: "-1.5px",
             }}>
-              YOU
-            </span>{" "}
-            better.
-          </h1>
-          <p style={{ fontSize: 17, color: "#6B6560", maxWidth: 480, margin: "0 auto 12px", lineHeight: 1.6 }}>
-            Not another chatbot. Mike polishes your prompts so every AI gives you better answers.
-          </p>
-          <p style={{ fontSize: 13, color: "#B0A89E", marginBottom: 8 }}>
-            Works with ChatGPT · Claude · Gemini · Copilot · any AI
-          </p>
-          <p style={{ fontSize: 12, color: "#C8C0BA", fontStyle: "italic" }}>
-            The average worker wastes 23 min/day retrying AI prompts.
-          </p>
-        </div>
-
-        {/* ── Example chips ── */}
-        <div style={{
-          marginBottom: 28,
-          opacity: visible ? 1 : 0, transition: "all 0.8s ease 0.35s",
-        }}>
-          <p style={{
-            fontSize: 12, fontWeight: 600, color: "#C0B8B0",
-            textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 10,
-            textAlign: "center",
-          }}>
-            Try an example:
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-            {EXAMPLE_CHIPS.map((chip) => (
-              <button
-                key={chip.prompt}
-                onClick={() => { setInput(chip.prompt); setShowResults(false); setOptimized(""); setFixes([]); }}
-                style={{
-                  padding: "7px 14px", borderRadius: 100,
-                  border: "1px solid rgba(0,0,0,0.08)",
-                  background: "rgba(255,255,255,0.8)",
-                  fontSize: 13, color: "#6B6560", cursor: "pointer",
-                  transition: "all 0.18s",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                }}
-                onMouseOver={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "#FF8A65";
-                  el.style.color = "#FF6E40";
-                  el.style.background = "rgba(255,110,64,0.04)";
-                  el.style.boxShadow = "0 2px 8px rgba(255,110,64,0.12)";
-                }}
-                onMouseOut={(e) => {
-                  const el = e.currentTarget;
-                  el.style.borderColor = "rgba(0,0,0,0.08)";
-                  el.style.color = "#6B6560";
-                  el.style.background = "rgba(255,255,255,0.8)";
-                  el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
-                }}
-              >
-                {chip.icon} {chip.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Input card ── */}
-        <div style={{
-          background: "white", borderRadius: 20,
-          border: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
-          overflow: "hidden",
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(20px)",
-          transition: "all 0.8s ease 0.5s",
-        }}>
-          {/* Textarea */}
-          <div style={{ padding: "24px 24px 0" }}>
-            <textarea
-              value={input}
-              onChange={(e) => { setInput(e.target.value); setShowResults(false); }}
-              placeholder="Type or paste your prompt here…"
-              rows={4}
-              style={{
-                width: "100%", border: "none", outline: "none", resize: "vertical",
-                fontSize: 16, lineHeight: 1.7, color: "#2D2A26",
-                fontFamily: "'DM Sans', sans-serif", background: "transparent",
-                minHeight: 100,
-              }}
-            />
-          </div>
-
-          {/* ── Chat & Product selectors ── */}
-          <div style={{
-            padding: "12px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
-            display: "flex", flexDirection: "column", gap: 10,
-          }}>
-            {/* Chat selector */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 80 }}>
-                Optimize for:
-              </span>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {["ChatGPT", "Claude", "Gemini", "Copilot"].map((chat) => (
-                  <button
-                    key={chat}
-                    onClick={() => setSelectedChat(chat)}
-                    style={{
-                      padding: "5px 12px", borderRadius: 100,
-                      border: selectedChat === chat
-                        ? "1px solid #FF8A65"
-                        : "1px solid rgba(0,0,0,0.08)",
-                      background: selectedChat === chat
-                        ? "rgba(255,110,64,0.07)"
-                        : "white",
-                      fontSize: 12,
-                      color: selectedChat === chat ? "#FF6E40" : "#A09890",
-                      fontWeight: selectedChat === chat ? 600 : 400,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {chat}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Product selector */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 80 }}>
-                Output for:
-              </span>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[
-                  { label: "📧 Email", value: "Email" },
-                  { label: "📊 Excel", value: "Excel" },
-                  { label: "📑 PowerPoint", value: "PowerPoint" },
-                  { label: "📄 Document", value: "Document" },
-                  { label: "💬 General", value: "General" },
-                ].map(({ label, value }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSelectedProduct(value)}
-                    style={{
-                      padding: "5px 12px", borderRadius: 100,
-                      border: selectedProduct === value
-                        ? "1px solid #FF8A65"
-                        : "1px solid rgba(0,0,0,0.08)",
-                      background: selectedProduct === value
-                        ? "rgba(255,110,64,0.07)"
-                        : "white",
-                      fontSize: 12,
-                      color: selectedProduct === value ? "#FF6E40" : "#A09890",
-                      fontWeight: selectedProduct === value ? 600 : 400,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Trust badge */}
-            <p style={{ fontSize: 12, color: "#C0B8B0", textAlign: "center", marginTop: 2 }}>
-              🔒 Your prompts are not stored · Powered by Claude · Works with every AI
-            </p>
-          </div>
-
-          {/* Action bar */}
-          <div style={{
-            padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            flexWrap: "wrap", gap: 12,
-          }}>
-            <div style={{ fontSize: 13, color: "#C0B8B0" }}>
-              {input.length > 0 ? `${input.length} chars` : "Paste anything — Mike handles the rest"}
-            </div>
-            <button
-              onClick={optimizePrompt}
-              disabled={loading || !input.trim()}
-              style={{
-                padding: "11px 26px", borderRadius: 12, border: "none",
-                background: loading
-                  ? "linear-gradient(135deg, #FFAB91, #FFCCBC)"
-                  : input.trim()
-                  ? "linear-gradient(135deg, #FF6E40, #FF8A65)"
-                  : "rgba(0,0,0,0.06)",
-                color: input.trim() ? "white" : "#C0B8B0",
-                fontSize: 15, fontWeight: 600,
-                cursor: input.trim() ? "pointer" : "default",
-                boxShadow: input.trim() ? "0 4px 16px rgba(255,110,64,0.3)" : "none",
-                transition: "all 0.3s",
-                display: "flex", alignItems: "center", gap: 8,
-              }}
-            >
-              {loading ? (
-                <>
-                  <span style={{
-                    display: "inline-block", width: 16, height: 16,
-                    border: "2px solid rgba(255,255,255,0.3)",
-                    borderTopColor: "white", borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite",
-                  }} />
-                  Mike is thinking...
-                </>
-              ) : (
-                <>🔧 Polish it</>
-              )}
-            </button>
-          </div>
-
-          {/* ── Help Mike help you (collapsible) ── */}
-          <div style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
-            <button
-              onClick={() => setContextOpen((v) => !v)}
-              style={{
-                width: "100%", padding: "10px 24px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "transparent",
-                border: "none", cursor: "pointer",
-              }}
-            >
-              <span style={{ fontSize: 12, color: "#C0B8B0", fontWeight: 500 }}>
-                🎯 Personalise for better results
-              </span>
+              {t.headline_pre}
               <span style={{
-                fontSize: 11, color: "#D0C8C0",
-                transform: contextOpen ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform 0.2s", display: "inline-block",
-              }}>▼</span>
-            </button>
-
-            {contextOpen && (
-              <div style={{
-                padding: "4px 24px 20px",
-                display: "flex", flexWrap: "wrap", gap: 12,
-                animation: "fadeUp 0.2s ease",
-              }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 160px" }}>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                    Your role
-                  </label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    style={{
-                      padding: "8px 12px", borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      fontSize: 13, color: role ? "#2D2A26" : "#C0B8B0",
-                      background: "white", outline: "none", cursor: "pointer",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    <option value="">Select role…</option>
-                    {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "2 1 200px" }}>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                    Your goal
-                  </label>
-                  <input
-                    type="text"
-                    value={goal}
-                    onChange={(e) => setGoal(e.target.value)}
-                    placeholder="e.g. save time on reports"
-                    style={{
-                      padding: "8px 12px", borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      fontSize: 13, color: "#2D2A26", background: "white",
-                      outline: "none", fontFamily: "'DM Sans', sans-serif",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-                    onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 140px" }}>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                    Your name
-                  </label>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    placeholder="e.g. Anna"
-                    style={{
-                      padding: "8px 12px", borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      fontSize: 13, color: "#2D2A26", background: "white",
-                      outline: "none", fontFamily: "'DM Sans', sans-serif",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-                    onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Error states */}
-        {error === "signup" && (
-          <div style={{
-            marginTop: 16, padding: "18px 24px", borderRadius: 16,
-            background: "white", border: "1px solid rgba(255,110,64,0.15)",
-            textAlign: "center",
-          }}>
-            <p style={{ fontSize: 14, color: "#6B6560", marginBottom: 12 }}>
-              You&apos;ve used all {MAX_FREE} free polishes. Drop your email to unlock more.
-            </p>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!email) return;
-                await fetch("/api/waitlist", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email, role: role || undefined, goal: goal || undefined, name: userName || undefined }),
-                });
-                setEmailSubmitted(true);
-                setError("");
-                setUsageCount(0);
-              }}
-              style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}
-            >
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                style={{
-                  padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)",
-                  fontSize: 14, outline: "none", minWidth: 220,
-                }} />
-              <button type="submit" style={{
-                padding: "10px 20px", borderRadius: 10, border: "none",
                 background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
-              }}>Unlock more</button>
-            </form>
-          </div>
-        )}
-        {error === "network" && (
-          <div style={{
-            marginTop: 16, padding: "14px 24px", borderRadius: 12,
-            background: "#FFF5F5", border: "1px solid rgba(244,67,54,0.1)",
-            fontSize: 14, color: "#E53935", textAlign: "center",
-          }}>
-            Something went wrong. Please try again.
-          </div>
-        )}
-
-        {/* ── Results ── */}
-        {showResults && optimized && (
-          <div ref={resultRef} style={{
-            marginTop: 24, background: "white", borderRadius: 20,
-            border: "1px solid rgba(76,175,80,0.12)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
-            overflow: "hidden", animation: "fadeUp 0.5s ease",
-          }}>
-            {/* Result header */}
-            <div style={{
-              padding: "14px 24px", borderBottom: "1px solid rgba(0,0,0,0.04)",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              background: "rgba(76,175,80,0.03)", flexWrap: "wrap", gap: 8,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#43A047" }}>
-                <span>✨</span> Mike&apos;s polished version
-              </div>
-              <button
-                onClick={() => copyText(optimized)}
-                style={{
-                  padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)",
-                  background: "white", fontSize: 12, color: "#6B6560", cursor: "pointer",
-                  fontWeight: 500, transition: "all 0.2s",
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
-                onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)"; e.currentTarget.style.color = "#6B6560"; }}
-              >
-                📋 Copy prompt
-              </button>
-            </div>
-
-            {/* Optimized prompt */}
-            <div style={{ padding: "20px 24px" }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 14,
-                lineHeight: 1.8, color: "#2D2A26", whiteSpace: "pre-wrap",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               }}>
-                {optimized}
-              </div>
+                {t.headline_accent}
+              </span>
+              {t.headline_post}
+            </h1>
+            <p style={{ fontSize: 17, color: "#6B6560", maxWidth: 480, margin: "0 auto 12px", lineHeight: 1.6 }}>
+              {t.subheadline}
+            </p>
+            <p style={{ fontSize: 13, color: "#B0A89E", marginBottom: 8 }}>
+              {t.works_with}
+            </p>
+            <p style={{ fontSize: 12, color: "#C8C0BA", fontStyle: "italic" }}>
+              {t.stat}
+            </p>
+          </div>
+
+          {/* ── Example chips ── */}
+          <div style={{
+            marginBottom: 28,
+            opacity: visible ? 1 : 0, transition: "all 0.8s ease 0.35s",
+          }}>
+            <p style={{
+              fontSize: 12, fontWeight: 600, color: "#C0B8B0",
+              textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 10,
+              textAlign: "center",
+            }}>
+              {t.try_example}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+              {EXAMPLE_CHIPS[lang].map((chip) => (
+                <button
+                  key={chip.prompt}
+                  onClick={() => { setInput(chip.prompt); setShowResults(false); setOptimized(""); setFixes([]); }}
+                  style={{
+                    padding: "7px 14px", borderRadius: 100,
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    background: "rgba(255,255,255,0.8)",
+                    fontSize: 13, color: "#6B6560", cursor: "pointer",
+                    transition: "all 0.18s",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  }}
+                  onMouseOver={(e) => {
+                    const el = e.currentTarget;
+                    el.style.borderColor = "#FF8A65";
+                    el.style.color = "#FF6E40";
+                    el.style.background = "rgba(255,110,64,0.04)";
+                    el.style.boxShadow = "0 2px 8px rgba(255,110,64,0.12)";
+                  }}
+                  onMouseOut={(e) => {
+                    const el = e.currentTarget;
+                    el.style.borderColor = "rgba(0,0,0,0.08)";
+                    el.style.color = "#6B6560";
+                    el.style.background = "rgba(255,255,255,0.8)";
+                    el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+                  }}
+                >
+                  {chip.icon} {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Input card ── */}
+          <div style={{
+            background: "white", borderRadius: 20,
+            border: "1px solid rgba(0,0,0,0.06)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
+            overflow: "hidden",
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(20px)",
+            transition: "all 0.8s ease 0.5s",
+          }}>
+            {/* Textarea */}
+            <div style={{ padding: "24px 24px 0" }}>
+              <textarea
+                value={input}
+                onChange={(e) => { setInput(e.target.value); setShowResults(false); }}
+                placeholder={t.placeholder}
+                rows={4}
+                style={{
+                  width: "100%", border: "none", outline: "none", resize: "vertical",
+                  fontSize: 16, lineHeight: 1.7, color: "#2D2A26",
+                  fontFamily: "'DM Sans', sans-serif", background: "transparent",
+                  minHeight: 100,
+                }}
+              />
             </div>
 
-            {/* Precision stat */}
+            {/* ── Chat & Product selectors ── */}
             <div style={{
               padding: "12px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
-              background: "rgba(0,0,0,0.01)",
+              display: "flex", flexDirection: "column", gap: 10,
             }}>
-              <span style={{ fontSize: 13, color: "#6B6560" }}>
-                ✨ Mike made your prompt{" "}
-                <strong style={{ color: "#FF6E40" }}>{precisionGain}% more precise</strong>
-              </span>
-            </div>
-
-            {/* ── What Mike fixed ── */}
-            {fixes.length > 0 && (
-              <div style={{
-                padding: "16px 24px 20px",
-                borderTop: "1px solid rgba(0,0,0,0.04)",
-                background: "rgba(255,110,64,0.02)",
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                  What Mike fixed
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {fixes.map((fix, i) => (
-                    <div key={i} style={{
-                      fontSize: 13, color: "#4A4540", lineHeight: 1.5,
-                      padding: "8px 12px", borderRadius: 10,
-                      background: "white", border: "1px solid rgba(0,0,0,0.04)",
-                    }}>
-                      {fix}
-                    </div>
+              {/* Chat selector */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 90 }}>
+                  {t.optimize_for}
+                </span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {["ChatGPT", "Claude", "Gemini", "Copilot"].map((chat) => (
+                    <button
+                      key={chat}
+                      onClick={() => setSelectedChat(chat)}
+                      style={{
+                        padding: "5px 12px", borderRadius: 100,
+                        border: selectedChat === chat ? "1px solid #FF8A65" : "1px solid rgba(0,0,0,0.08)",
+                        background: selectedChat === chat ? "rgba(255,110,64,0.07)" : "white",
+                        fontSize: 12,
+                        color: selectedChat === chat ? "#FF6E40" : "#A09890",
+                        fontWeight: selectedChat === chat ? 600 : 400,
+                        cursor: "pointer", transition: "all 0.15s",
+                      }}
+                    >
+                      {chat}
+                    </button>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* ── Pro tip ── */}
-            {proTip && (
-              <div style={{
-                padding: "14px 24px",
-                borderTop: "1px solid rgba(0,0,0,0.04)",
-                background: "rgba(255,183,77,0.04)",
-              }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 14, lineHeight: 1.4 }}>💡</span>
-                  <span style={{ fontSize: 12, color: "#7A6A60", lineHeight: 1.6 }}>
-                    <span style={{ fontWeight: 700, color: "#E65100" }}>Pro tip: </span>
-                    {proTip}
-                  </span>
+              {/* Product selector */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 90 }}>
+                  {t.output_for}
+                </span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {[
+                    { en: "📧 Email", pl: "📧 Email", value: "Email" },
+                    { en: "📊 Excel", pl: "📊 Excel", value: "Excel" },
+                    { en: "📑 PowerPoint", pl: "📑 PowerPoint", value: "PowerPoint" },
+                    { en: "📄 Document", pl: "📄 Dokument", value: "Document" },
+                    { en: "💬 General", pl: "💬 Ogólny", value: "General" },
+                  ].map(({ en: enL, pl: plL, value }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSelectedProduct(value)}
+                      style={{
+                        padding: "5px 12px", borderRadius: 100,
+                        border: selectedProduct === value ? "1px solid #FF8A65" : "1px solid rgba(0,0,0,0.08)",
+                        background: selectedProduct === value ? "rgba(255,110,64,0.07)" : "white",
+                        fontSize: 12,
+                        color: selectedProduct === value ? "#FF6E40" : "#A09890",
+                        fontWeight: selectedProduct === value ? 600 : 400,
+                        cursor: "pointer", transition: "all 0.15s",
+                      }}
+                    >
+                      {lang === "pl" ? plL : enL}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
+              {/* Trust badge */}
+              <p style={{ fontSize: 12, color: "#C0B8B0", textAlign: "center", marginTop: 2 }}>
+                {t.trust_badge}
+              </p>
+            </div>
 
-            {/* ── Feedback ── */}
+            {/* Action bar */}
             <div style={{
-              padding: "14px 24px",
-              borderTop: "1px solid rgba(0,0,0,0.04)",
-              display: "flex", alignItems: "center", gap: 12,
+              padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              flexWrap: "wrap", gap: 12,
             }}>
-              {feedback ? (
-                <span style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>
-                  Thanks for feedback!
+              <div style={{ fontSize: 13, color: "#C0B8B0" }}>
+                {input.length > 0 ? t.chars_hint(input.length) : t.paste_hint}
+              </div>
+              <button
+                onClick={optimizePrompt}
+                disabled={loading || !input.trim()}
+                style={{
+                  padding: "11px 26px", borderRadius: 12, border: "none",
+                  background: loading
+                    ? "linear-gradient(135deg, #FFAB91, #FFCCBC)"
+                    : input.trim()
+                    ? "linear-gradient(135deg, #FF6E40, #FF8A65)"
+                    : "rgba(0,0,0,0.06)",
+                  color: input.trim() ? "white" : "#C0B8B0",
+                  fontSize: 15, fontWeight: 600,
+                  cursor: input.trim() ? "pointer" : "default",
+                  boxShadow: input.trim() ? "0 4px 16px rgba(255,110,64,0.3)" : "none",
+                  transition: "all 0.3s",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}
+              >
+                {loading ? (
+                  <>
+                    <span style={{
+                      display: "inline-block", width: 16, height: 16,
+                      border: "2px solid rgba(255,255,255,0.3)",
+                      borderTopColor: "white", borderRadius: "50%",
+                      animation: "spin 0.8s linear infinite",
+                    }} />
+                    {t.thinking}
+                  </>
+                ) : t.polish_btn}
+              </button>
+            </div>
+
+            {/* ── Personalise (collapsible) ── */}
+            <div style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+              <button
+                onClick={() => setContextOpen((v) => !v)}
+                style={{
+                  width: "100%", padding: "10px 24px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  background: "transparent", border: "none", cursor: "pointer",
+                }}
+              >
+                <span style={{ fontSize: 12, color: "#C0B8B0", fontWeight: 500 }}>
+                  {t.personalise}
                 </span>
-              ) : (
-                <>
-                  <span style={{ fontSize: 13, color: "#A09890" }}>Was this helpful?</span>
-                  <button
-                    onClick={() => handleFeedback("positive")}
-                    style={{
-                      padding: "6px 14px", borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      background: "white", fontSize: 16, cursor: "pointer",
-                      transition: "all 0.18s",
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.borderColor = "#43A047";
-                      e.currentTarget.style.background = "rgba(67,160,71,0.06)";
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
-                      e.currentTarget.style.background = "white";
-                    }}
-                  >👍</button>
-                  <button
-                    onClick={() => handleFeedback("negative")}
-                    style={{
-                      padding: "6px 14px", borderRadius: 10,
-                      border: "1px solid rgba(0,0,0,0.08)",
-                      background: "white", fontSize: 16, cursor: "pointer",
-                      transition: "all 0.18s",
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.borderColor = "#E53935";
-                      e.currentTarget.style.background = "rgba(229,57,53,0.06)";
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
-                      e.currentTarget.style.background = "white";
-                    }}
-                  >👎</button>
-                </>
+                <span style={{
+                  fontSize: 11, color: "#D0C8C0",
+                  transform: contextOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s", display: "inline-block",
+                }}>▼</span>
+              </button>
+
+              {contextOpen && (
+                <div style={{
+                  padding: "4px 24px 20px",
+                  display: "flex", flexWrap: "wrap", gap: 12,
+                  animation: "fadeUp 0.2s ease",
+                }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 160px" }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                      {t.your_role}
+                    </label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10,
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        fontSize: 13, color: role ? "#2D2A26" : "#C0B8B0",
+                        background: "white", outline: "none", cursor: "pointer",
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      <option value="">{t.select_role}</option>
+                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "2 1 200px" }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                      {t.your_goal}
+                    </label>
+                    <input
+                      type="text"
+                      value={goal}
+                      onChange={(e) => setGoal(e.target.value)}
+                      placeholder={t.goal_placeholder}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10,
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        fontSize: 13, color: "#2D2A26", background: "white",
+                        outline: "none", fontFamily: "'DM Sans', sans-serif",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
+                      onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 140px" }}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                      {t.your_name}
+                    </label>
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder={t.name_placeholder}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10,
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        fontSize: 13, color: "#2D2A26", background: "white",
+                        outline: "none", fontFamily: "'DM Sans', sans-serif",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
+                      onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
-        )}
 
-        {/* Waitlist banner */}
-        {!emailSubmitted ? (
-          <div style={{
-            marginTop: 40, padding: "16px 20px", borderRadius: 14,
-            background: "white", border: "1px solid rgba(0,0,0,0.05)",
-            display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12,
-            justifyContent: "center",
-          }}>
-            <span style={{ fontSize: 14, color: "#6B6560" }}>
-              🧡 Like Mike? Join the waitlist for Pro features.
-            </span>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!email) return;
-                await fetch("/api/waitlist", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ email, role: role || undefined, goal: goal || undefined, name: userName || undefined }),
-                });
-                setEmailSubmitted(true);
-              }}
-              style={{ display: "flex", gap: 8 }}
-            >
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                style={{
-                  padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)",
-                  fontSize: 13, outline: "none", width: 180, transition: "border-color 0.2s",
+          {/* Error states */}
+          {error === "signup" && (
+            <div style={{
+              marginTop: 16, padding: "18px 24px", borderRadius: 16,
+              background: "white", border: "1px solid rgba(255,110,64,0.15)",
+              textAlign: "center",
+            }}>
+              <p style={{ fontSize: 14, color: "#6B6560", marginBottom: 12 }}>
+                {t.used_all(MAX_FREE)}
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await submitWaitlist(() => { setEmailSubmitted(true); setError(""); setUsageCount(0); });
                 }}
-                onFocus={(e) => ((e.target as HTMLInputElement).style.borderColor = "#FF8A65")}
-                onBlur={(e) => ((e.target as HTMLInputElement).style.borderColor = "rgba(0,0,0,0.08)")}
-              />
-              <button type="submit" style={{
-                padding: "8px 16px", borderRadius: 10, border: "none",
-                background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer",
-              }}>Join</button>
-            </form>
-          </div>
-        ) : (
-          <div style={{
-            marginTop: 40, padding: "14px 24px", borderRadius: 14,
-            background: "rgba(76,175,80,0.06)", border: "1px solid rgba(76,175,80,0.12)",
-            textAlign: "center",
-          }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "#2E7D32" }}>
-              🎉 You&apos;re on the list! Mike will be in touch.
-            </p>
-          </div>
-        )}
+                style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}
+              >
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  style={{
+                    padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)",
+                    fontSize: 14, outline: "none", minWidth: 220,
+                  }} />
+                <button type="submit" style={{
+                  padding: "10px 20px", borderRadius: 10, border: "none",
+                  background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                  color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}>{t.unlock}</button>
+              </form>
+            </div>
+          )}
+          {error === "network" && (
+            <div style={{
+              marginTop: 16, padding: "14px 24px", borderRadius: 12,
+              background: "#FFF5F5", border: "1px solid rgba(244,67,54,0.1)",
+              fontSize: 14, color: "#E53935", textAlign: "center",
+            }}>
+              {t.network_error}
+            </div>
+          )}
 
-        {/* Footer */}
-        <footer style={{
-          marginTop: 60, paddingBottom: 24,
-          textAlign: "center", fontSize: 13, color: "#C0B8B0",
-        }}>
-          Made in Warsaw 🇵🇱 · Works with every AI chat ·{" "}
-          <a href="mailto:hello@mikeprompt.com" style={{ color: "#C0B8B0", textDecoration: "none" }}>
-            hello@mikeprompt.com
-          </a>
-        </footer>
+          {/* ── Results ── */}
+          {showResults && optimized && (
+            <div ref={resultRef} style={{
+              marginTop: 24, background: "white", borderRadius: 20,
+              border: "1px solid rgba(76,175,80,0.12)",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
+              overflow: "hidden", animation: "fadeUp 0.5s ease",
+            }}>
+              {/* Result header */}
+              <div style={{
+                padding: "14px 24px", borderBottom: "1px solid rgba(0,0,0,0.04)",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: "rgba(76,175,80,0.03)", flexWrap: "wrap", gap: 8,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#43A047" }}>
+                  <span>✨</span> {t.mikes_version}
+                </div>
+                <button
+                  onClick={() => copyText(optimized)}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)",
+                    background: "white", fontSize: 12, color: "#6B6560", cursor: "pointer",
+                    fontWeight: 500, transition: "all 0.2s",
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
+                  onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)"; e.currentTarget.style.color = "#6B6560"; }}
+                >
+                  {t.copy_prompt}
+                </button>
+              </div>
+
+              {/* Optimized prompt */}
+              <div style={{ padding: "20px 24px" }}>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 14,
+                  lineHeight: 1.8, color: "#2D2A26", whiteSpace: "pre-wrap",
+                }}>
+                  {optimized}
+                </div>
+              </div>
+
+              {/* Precision stat */}
+              <div style={{
+                padding: "12px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
+                background: "rgba(0,0,0,0.01)",
+              }}>
+                <span style={{ fontSize: 13, color: "#6B6560" }}>
+                  {t.more_precise(precisionGain)}
+                </span>
+              </div>
+
+              {/* What Mike fixed */}
+              {fixes.length > 0 && (
+                <div style={{
+                  padding: "16px 24px 20px",
+                  borderTop: "1px solid rgba(0,0,0,0.04)",
+                  background: "rgba(255,110,64,0.02)",
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {t.what_fixed}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {fixes.map((fix, i) => (
+                      <div key={i} style={{
+                        fontSize: 13, color: "#4A4540", lineHeight: 1.5,
+                        padding: "8px 12px", borderRadius: 10,
+                        background: "white", border: "1px solid rgba(0,0,0,0.04)",
+                      }}>
+                        {fix}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pro tip */}
+              {proTip && (
+                <div style={{
+                  padding: "14px 24px",
+                  borderTop: "1px solid rgba(0,0,0,0.04)",
+                  background: "rgba(255,183,77,0.04)",
+                }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 14, lineHeight: 1.4 }}>💡</span>
+                    <span style={{ fontSize: 12, color: "#7A6A60", lineHeight: 1.6 }}>
+                      <span style={{ fontWeight: 700, color: "#E65100" }}>{t.pro_tip_label}</span>
+                      {proTip}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Feedback */}
+              <div style={{
+                padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
+                display: "flex", alignItems: "center", gap: 12,
+              }}>
+                {feedback ? (
+                  <span style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>
+                    {t.thanks_feedback}
+                  </span>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 13, color: "#A09890" }}>{t.was_helpful}</span>
+                    <button
+                      onClick={() => handleFeedback("positive")}
+                      style={{
+                        padding: "6px 14px", borderRadius: 10,
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        background: "white", fontSize: 16, cursor: "pointer", transition: "all 0.18s",
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.borderColor = "#43A047"; e.currentTarget.style.background = "rgba(67,160,71,0.06)"; }}
+                      onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.background = "white"; }}
+                    >👍</button>
+                    <button
+                      onClick={() => handleFeedback("negative")}
+                      style={{
+                        padding: "6px 14px", borderRadius: 10,
+                        border: "1px solid rgba(0,0,0,0.08)",
+                        background: "white", fontSize: 16, cursor: "pointer", transition: "all 0.18s",
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.borderColor = "#E53935"; e.currentTarget.style.background = "rgba(229,57,53,0.06)"; }}
+                      onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.background = "white"; }}
+                    >👎</button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Waitlist banner */}
+          {!emailSubmitted ? (
+            <div style={{
+              marginTop: 40, padding: "16px 20px", borderRadius: 14,
+              background: "white", border: "1px solid rgba(0,0,0,0.05)",
+              display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12,
+              justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 14, color: "#6B6560" }}>{t.like_mike}</span>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await submitWaitlist(() => setEmailSubmitted(true));
+                }}
+                style={{ display: "flex", gap: 8 }}
+              >
+                <input
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  style={{
+                    padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)",
+                    fontSize: 13, outline: "none", width: 180, transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => ((e.target as HTMLInputElement).style.borderColor = "#FF8A65")}
+                  onBlur={(e) => ((e.target as HTMLInputElement).style.borderColor = "rgba(0,0,0,0.08)")}
+                />
+                <button type="submit" style={{
+                  padding: "8px 16px", borderRadius: 10, border: "none",
+                  background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                  color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                }}>{t.join}</button>
+              </form>
+            </div>
+          ) : (
+            <div style={{
+              marginTop: 40, padding: "14px 24px", borderRadius: 14,
+              background: "rgba(76,175,80,0.06)", border: "1px solid rgba(76,175,80,0.12)",
+              textAlign: "center",
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#2E7D32" }}>
+                {t.on_list}
+              </p>
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer style={{
+            marginTop: 60, paddingBottom: 24,
+            textAlign: "center", fontSize: 13, color: "#C0B8B0",
+          }}>
+            {t.footer}
+            <a href="mailto:hello@mikeprompt.com" style={{ color: "#C0B8B0", textDecoration: "none" }}>
+              hello@mikeprompt.com
+            </a>
+          </footer>
         </>)}
       </main>
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
