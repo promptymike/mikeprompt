@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import PromptLibrary from "./PromptLibrary";
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
@@ -68,6 +69,7 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
+  const [activeTab, setActiveTab] = useState<"polish" | "library">("polish");
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -191,6 +193,31 @@ const MikePromptMVP = () => {
             </div>
           </div>
         </div>
+
+        {/* Tab switcher */}
+        <div style={{
+          display: "flex", gap: 4,
+          background: "rgba(0,0,0,0.04)", borderRadius: 10, padding: 4,
+        }}>
+          {([["polish", "✨ Polish"], ["library", "📚 Library"]] as const).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: "6px 14px", borderRadius: 7, border: "none",
+                background: activeTab === tab ? "white" : "transparent",
+                color: activeTab === tab ? "#2D2A26" : "#A09890",
+                fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
+                cursor: "pointer",
+                boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                transition: "all 0.18s",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {dailyCount > 0 && (
             <div style={{
@@ -214,6 +241,21 @@ const MikePromptMVP = () => {
         maxWidth: 800, margin: "0 auto", padding: "20px 24px 60px",
         position: "relative", zIndex: 5,
       }}>
+
+        {/* ── Library tab ── */}
+        {activeTab === "library" && (
+          <PromptLibrary
+            onPolish={(prompt) => {
+              setInput(prompt);
+              setActiveTab("polish");
+              setShowResults(false);
+              setOptimized("");
+              setFixes([]);
+            }}
+          />
+        )}
+
+        {activeTab === "polish" && (<>
         {/* Hero */}
         <div style={{
           textAlign: "center", marginBottom: 16,
@@ -538,7 +580,18 @@ const MikePromptMVP = () => {
               You&apos;ve used all {MAX_FREE} free polishes. Drop your email to unlock more.
             </p>
             <form
-              onSubmit={(e) => { e.preventDefault(); if (email) { setEmailSubmitted(true); setError(""); setUsageCount(0); } }}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!email) return;
+                await fetch("/api/waitlist", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, role: role || undefined, goal: goal || undefined, name: userName || undefined }),
+                });
+                setEmailSubmitted(true);
+                setError("");
+                setUsageCount(0);
+              }}
               style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}
             >
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -723,7 +776,16 @@ const MikePromptMVP = () => {
               🧡 Like Mike? Join the waitlist for Pro features.
             </span>
             <form
-              onSubmit={(e) => { e.preventDefault(); if (email) setEmailSubmitted(true); }}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!email) return;
+                await fetch("/api/waitlist", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, role: role || undefined, goal: goal || undefined, name: userName || undefined }),
+                });
+                setEmailSubmitted(true);
+              }}
               style={{ display: "flex", gap: 8 }}
             >
               <input
@@ -767,6 +829,7 @@ const MikePromptMVP = () => {
             hello@mikeprompt.com
           </a>
         </footer>
+        </>)}
       </main>
       <style>{`
         @keyframes spin {
