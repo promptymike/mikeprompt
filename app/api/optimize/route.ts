@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { prompt } = await req.json();
+  const { prompt, role, goal, name } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
@@ -16,7 +16,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  console.log("[optimize] Calling Anthropic API for prompt:", prompt.slice(0, 80));
+  console.log("[optimize] request", {
+    prompt: prompt.slice(0, 120),
+    role: role || null,
+    goal: goal || null,
+    name: name || null,
+  });
+
+  const contextParts: string[] = [];
+  if (role) contextParts.push(`User role: ${role}`);
+  if (goal) contextParts.push(`User goal: ${goal}`);
+  if (name) contextParts.push(`User name: ${name}`);
+  const contextBlock =
+    contextParts.length > 0
+      ? `\n\nContext about the user:\n${contextParts.join("\n")}`
+      : "";
+
+  const userMessage = `${prompt}${contextBlock}`;
 
   let response: Response;
   try {
@@ -29,10 +45,10 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 500,
+        max_tokens: 300,
         system:
-          "You are Mike, a prompt optimizer. Take the user's vague prompt and return ONLY an improved, structured version. Match the user's language. No explanations.",
-        messages: [{ role: "user", content: prompt }],
+          "You are Mike. Rewrite the user's prompt to be clear, specific and structured. Output ONLY the improved prompt. Max 150 words. Match user's language.",
+        messages: [{ role: "user", content: userMessage }],
       }),
     });
   } catch (err) {
@@ -50,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 
   const data = await response.json();
-  console.log("[optimize] Anthropic response:", JSON.stringify(data).slice(0, 200));
+  console.log("[optimize] response", JSON.stringify(data).slice(0, 200));
 
   const result = data.content?.[0]?.text;
   if (!result) {
