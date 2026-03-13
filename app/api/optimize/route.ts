@@ -7,50 +7,68 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
+    console.error("[optimize] GEMINI_API_KEY is not set");
     return NextResponse.json(
       { error: "API key not configured" },
       { status: 500 }
     );
   }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      messages: [
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+  const body = {
+    system_instruction: {
+      parts: [
         {
-          role: "user",
-          content: `You are Mike, an expert prompt optimizer. Take the user's rough/vague prompt and transform it into a clear, structured, professional prompt that will get much better results from any AI model.
-Rules:
-- Keep the core intent but add: specific context, desired format, constraints, and quality markers
-- Make it structured but natural — not robotic
-- If the prompt is in Polish, respond in Polish. If in English, respond in English.
-- ONLY output the optimized prompt, nothing else. No explanations, no preamble, no "Here's the optimized version:"
-- Keep it concise but comprehensive — don't pad unnecessarily
-User's prompt: "${prompt.replace(/"/g, '\\"')}"`,
+          text: "You are Mike, a prompt optimizer. Take the user's vague prompt and return ONLY an improved, structured version. Match the user's language. No explanations.",
         },
       ],
-    }),
-  });
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ],
+    generationConfig: { maxOutputTokens: 1000 },
+  };
+
+  console.log("[optimize] Calling Gemini API for prompt:", prompt.slice(0, 80));
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    console.error("[optimize] Fetch failed:", err);
+    return NextResponse.json({ error: "Network error" }, { status: 502 });
+  }
 
   if (!response.ok) {
-    const err = await response.text();
-    console.error("Anthropic API error:", err);
+    const errText = await response.text();
+    console.error(`[optimize] Gemini API error ${response.status}:`, errText);
     return NextResponse.json(
-      { error: "Upstream API error" },
+      { error: `Upstream API error: ${response.status}` },
       { status: 502 }
     );
   }
 
   const data = await response.json();
-  const result = data.content?.[0]?.text ?? "Something went wrong.";
+  console.log("[optimize] Gemini response:", JSON.stringify(data).slice(0, 200));
+
+  const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!result) {
+    console.error("[optimize] Unexpected response shape:", JSON.stringify(data));
+    return NextResponse.json(
+      { error: "Empty response from API" },
+      { status: 502 }
+    );
+  }
+
   return NextResponse.json({ result });
 }
