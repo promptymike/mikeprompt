@@ -1,5 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const SYSTEM_PROMPT = `You are Mike, an expert prompt engineer. Your job is to take a vague, incomplete prompt and transform it into one that gets excellent results from any AI.
+
+WHAT YOU FIX:
+- Missing context: add WHO this is for, WHAT the situation is
+- Missing format: specify output format (email, table, report, bullets, etc.)
+- Missing audience: clarify who will read/receive this
+- Missing constraints: add length, tone, level of detail
+- Missing role: tell the AI what expert to be
+- Missing success criteria: define what "good" looks like
+- Vague language: replace "good", "nice", "some" with specifics
+- Overloaded requests: break into clear steps if needed
+- Missing "what to avoid": add guardrails
+
+RULES:
+- Output ONLY the improved prompt, nothing else
+- Max 200 words
+- Match the user's language (Polish→Polish, English→English)
+- If user provided their role/goal, weave it naturally into the prompt
+- Add a one-line "📋 Format:" instruction at the end specifying desired output format
+- Be practical, not academic. Write like a smart colleague, not a textbook.
+
+Respond ONLY with valid JSON: {"optimized": "improved prompt here", "fixes": ["short description of each fix"]}. No markdown, no backticks, just raw JSON.`;
+
 export async function POST(req: NextRequest) {
   const { prompt, role, goal, name } = await req.json();
 
@@ -10,10 +33,7 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error("[optimize] ANTHROPIC_API_KEY is not set");
-    return NextResponse.json(
-      { error: "API key not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "API key not configured" }, { status: 500 });
   }
 
   console.log("[optimize] request", {
@@ -45,9 +65,8 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 300,
-        system:
-          "You are Mike. Rewrite the user's prompt to be clear, specific and structured. Output ONLY the improved prompt. Max 150 words. Match user's language.",
+        max_tokens: 600,
+        system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
       }),
     });
@@ -66,16 +85,22 @@ export async function POST(req: NextRequest) {
   }
 
   const data = await response.json();
-  console.log("[optimize] response", JSON.stringify(data).slice(0, 200));
+  const raw = data.content?.[0]?.text;
 
-  const result = data.content?.[0]?.text;
-  if (!result) {
+  if (!raw) {
     console.error("[optimize] Unexpected response shape:", JSON.stringify(data));
-    return NextResponse.json(
-      { error: "Empty response from API" },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: "Empty response from API" }, { status: 502 });
   }
 
-  return NextResponse.json({ result });
+  let parsed: { optimized: string; fixes: string[] };
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    console.error("[optimize] JSON parse failed, raw:", raw.slice(0, 300));
+    // Fallback: treat entire response as optimized prompt with no fixes
+    return NextResponse.json({ result: raw, fixes: [] });
+  }
+
+  console.log("[optimize] success, fixes:", parsed.fixes);
+  return NextResponse.json({ result: parsed.optimized, fixes: parsed.fixes ?? [] });
 }

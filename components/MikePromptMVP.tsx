@@ -54,9 +54,42 @@ const EXAMPLE_CATEGORIES = [
 
 const ROLES = ["Finance", "Admin", "Accounting", "Sales", "Management", "HR", "Other"];
 
+const PRO_TIPS = [
+  "Always specify your audience — AI writes differently for a CEO than for a colleague",
+  "Add 'Format as...' at the end to control output structure",
+  "Tell AI what to avoid — it's as important as what to include",
+  "Break complex tasks into numbered steps for better results",
+  "Specify tone: formal, casual, technical, friendly — don't leave it to chance",
+  "Include an example of what good output looks like",
+  "Set a word/page limit — without it AI tends to over-explain",
+  "Start with a role: 'Act as a senior financial analyst...' changes everything",
+  "If asking for analysis, specify what data points matter most",
+  "Ask for pros AND cons — AI defaults to positive if you don't",
+  "Specify the time period — 'recent' means different things to different AIs",
+  "One prompt, one task. Split complex requests into separate prompts",
+  "Add context about what you already know to avoid basic explanations",
+  "Tell AI your experience level so it calibrates depth appropriately",
+  "End with 'Before you start, ask me 3 clarifying questions' for complex tasks",
+];
+
+const TODAY_KEY = () => `mikeprompt_count_${new Date().toISOString().slice(0, 10)}`;
+
+const getStoredCount = (): number => {
+  if (typeof window === "undefined") return 0;
+  return parseInt(localStorage.getItem(TODAY_KEY()) ?? "0", 10);
+};
+
+const incrementStoredCount = (): number => {
+  const next = getStoredCount() + 1;
+  localStorage.setItem(TODAY_KEY(), String(next));
+  return next;
+};
+
 const MikePromptMVP = () => {
   const [input, setInput] = useState("");
   const [optimized, setOptimized] = useState("");
+  const [fixes, setFixes] = useState<string[]>([]);
+  const [proTip, setProTip] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showResults, setShowResults] = useState(false);
@@ -68,11 +101,13 @@ const MikePromptMVP = () => {
   const [role, setRole] = useState("");
   const [goal, setGoal] = useState("");
   const [userName, setUserName] = useState("");
+  const [dailyCount, setDailyCount] = useState(0);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
   useEffect(() => {
     setVisible(true);
+    setDailyCount(getStoredCount());
   }, []);
 
   const optimizePrompt = async () => {
@@ -99,16 +134,22 @@ const MikePromptMVP = () => {
       if (!response.ok) throw new Error(data.error || "API error");
       const result = data.result || "Something went wrong. Try again.";
       setOptimized(result);
+      setFixes(Array.isArray(data.fixes) ? data.fixes : []);
+      setProTip(PRO_TIPS[Math.floor(Math.random() * PRO_TIPS.length)]);
       setShowResults(true);
       setUsageCount((prev) => prev + 1);
+      const newCount = incrementStoredCount();
+      setDailyCount(newCount);
       setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 300);
     } catch {
       setError("network");
     }
     setLoading(false);
   };
+
+  const copyText = (text: string) => navigator.clipboard.writeText(text);
 
   const inputTokens = estimateTokens(input);
   const outputTokens = estimateTokens(optimized);
@@ -118,15 +159,12 @@ const MikePromptMVP = () => {
       : 0;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(165deg, #FFF8F0 0%, #FFF1E6 30%, #FFE8D6 60%, #FFDDC1 100%)",
-        fontFamily: "'DM Sans', sans-serif",
-        color: "#2D2A26",
-      }}
-    >
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(165deg, #FFF8F0 0%, #FFF1E6 30%, #FFE8D6 60%, #FFDDC1 100%)",
+      fontFamily: "'DM Sans', sans-serif",
+      color: "#2D2A26",
+    }}>
       <link
         href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet"
@@ -167,10 +205,21 @@ const MikePromptMVP = () => {
             mike<span style={{ color: "#FF6E40" }}>prompt</span>
           </span>
         </div>
-        <div style={{ fontSize: 13, color: "#A09890", fontWeight: 500 }}>
-          {MAX_FREE - usageCount > 0
-            ? `${MAX_FREE - usageCount} free polishes left`
-            : "Sign up for more"}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {dailyCount > 0 && (
+            <div style={{
+              fontSize: 13, color: "#FF6E40", fontWeight: 600,
+              background: "rgba(255,110,64,0.08)", borderRadius: 100,
+              padding: "4px 12px",
+            }}>
+              🔥 {dailyCount} prompt{dailyCount !== 1 ? "s" : ""} polished today
+            </div>
+          )}
+          <div style={{ fontSize: 13, color: "#A09890", fontWeight: 500 }}>
+            {MAX_FREE - usageCount > 0
+              ? `${MAX_FREE - usageCount} free polishes left`
+              : "Sign up for more"}
+          </div>
         </div>
       </nav>
 
@@ -224,7 +273,6 @@ const MikePromptMVP = () => {
                 boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
                 overflow: "hidden",
               }}>
-                {/* Category header */}
                 <div style={{
                   padding: "10px 18px",
                   background: "rgba(255,110,64,0.03)",
@@ -235,12 +283,11 @@ const MikePromptMVP = () => {
                   <span>{cat.icon}</span>
                   <span>{cat.label}</span>
                 </div>
-                {/* Prompt buttons */}
                 <div style={{ padding: "10px 12px", display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {cat.prompts.map((p) => (
                     <button
                       key={p}
-                      onClick={() => { setInput(p); setShowResults(false); setOptimized(""); }}
+                      onClick={() => { setInput(p); setShowResults(false); setOptimized(""); setFixes([]); }}
                       style={{
                         padding: "7px 14px", borderRadius: 100,
                         border: "1px solid rgba(0,0,0,0.07)",
@@ -351,7 +398,6 @@ const MikePromptMVP = () => {
                 display: "flex", flexWrap: "wrap", gap: 12,
                 animation: "fadeUp 0.2s ease",
               }}>
-                {/* Role dropdown */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 160px" }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "#A09890", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                     Your role
@@ -368,12 +414,9 @@ const MikePromptMVP = () => {
                     }}
                   >
                     <option value="">Select role…</option>
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
+                    {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
-                {/* Goal input */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "2 1 200px" }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "#A09890", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                     Your goal
@@ -393,7 +436,6 @@ const MikePromptMVP = () => {
                     onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
                   />
                 </div>
-                {/* Name input */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 140px" }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "#A09890", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                     Your name <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span>
@@ -424,9 +466,7 @@ const MikePromptMVP = () => {
             flexWrap: "wrap", gap: 12,
           }}>
             <div style={{ fontSize: 13, color: "#A09890" }}>
-              {input.length > 0
-                ? `${input.length} characters`
-                : "Paste anything — Mike handles the rest"}
+              {input.length > 0 ? `${input.length} characters` : "Paste anything — Mike handles the rest"}
             </div>
             <button
               onClick={optimizePrompt}
@@ -474,10 +514,7 @@ const MikePromptMVP = () => {
               You&apos;ve used all {MAX_FREE} free polishes. Drop your email to get more!
             </p>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (email) { setEmailSubmitted(true); setError(""); setUsageCount(0); }
-              }}
+              onSubmit={(e) => { e.preventDefault(); if (email) { setEmailSubmitted(true); setError(""); setUsageCount(0); } }}
               style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}
             >
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -504,7 +541,7 @@ const MikePromptMVP = () => {
           </div>
         )}
 
-        {/* Results */}
+        {/* ── Results ── */}
         {showResults && optimized && (
           <div ref={resultRef} style={{
             marginTop: 24, background: "white", borderRadius: 20,
@@ -512,25 +549,45 @@ const MikePromptMVP = () => {
             boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
             overflow: "hidden", animation: "fadeUp 0.5s ease",
           }}>
+            {/* Result header */}
             <div style={{
               padding: "14px 24px", borderBottom: "1px solid rgba(0,0,0,0.04)",
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              background: "rgba(76,175,80,0.03)",
+              background: "rgba(76,175,80,0.03)", flexWrap: "wrap", gap: 8,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#43A047" }}>
                 <span>✨</span> Mike&apos;s polished version
               </div>
-              <button
-                onClick={() => navigator.clipboard.writeText(optimized)}
-                style={{
-                  padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)",
-                  background: "white", fontSize: 12, color: "#6B6560", cursor: "pointer",
-                  fontWeight: 500, transition: "all 0.2s",
-                }}
-              >
-                📋 Copy
-              </button>
+              {/* Two copy buttons */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => copyText(optimized)}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)",
+                    background: "white", fontSize: 12, color: "#6B6560", cursor: "pointer",
+                    fontWeight: 500, transition: "all 0.2s",
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
+                  onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)"; e.currentTarget.style.color = "#6B6560"; }}
+                >
+                  📋 Copy for ChatGPT
+                </button>
+                <button
+                  onClick={() => copyText(optimized)}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)",
+                    background: "white", fontSize: 12, color: "#6B6560", cursor: "pointer",
+                    fontWeight: 500, transition: "all 0.2s",
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
+                  onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)"; e.currentTarget.style.color = "#6B6560"; }}
+                >
+                  📋 Copy for Claude
+                </button>
+              </div>
             </div>
+
+            {/* Optimized prompt */}
             <div style={{ padding: "20px 24px" }}>
               <div style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: 14,
@@ -539,6 +596,7 @@ const MikePromptMVP = () => {
                 {optimized}
               </div>
             </div>
+
             {/* Stats bar */}
             <div style={{
               padding: "16px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
@@ -567,6 +625,7 @@ const MikePromptMVP = () => {
                 </span>
               </div>
             </div>
+
             {/* Cost table */}
             <div style={{ padding: "16px 24px 20px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#A09890", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -588,6 +647,51 @@ const MikePromptMVP = () => {
                 })}
               </div>
             </div>
+
+            {/* ── What Mike fixed ── */}
+            {fixes.length > 0 && (
+              <div style={{
+                padding: "16px 24px 20px",
+                borderTop: "1px solid rgba(0,0,0,0.04)",
+                background: "rgba(255,110,64,0.02)",
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#A09890", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  What Mike fixed
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {fixes.map((fix, i) => (
+                    <div key={i} style={{
+                      fontSize: 13, color: "#4A4540", lineHeight: 1.5,
+                      padding: "8px 12px", borderRadius: 10,
+                      background: "white", border: "1px solid rgba(0,0,0,0.04)",
+                    }}>
+                      {fix}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Pro tip ── */}
+            {proTip && (
+              <div style={{
+                padding: "16px 24px 20px",
+                borderTop: "1px solid rgba(0,0,0,0.04)",
+                background: "rgba(255,183,77,0.04)",
+              }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>💡</span>
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#E65100", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Pro tip:{" "}
+                    </span>
+                    <span style={{ fontSize: 13, color: "#4A4540", lineHeight: 1.6 }}>
+                      {proTip}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -638,6 +742,66 @@ const MikePromptMVP = () => {
             </p>
           </div>
         )}
+
+        {/* ── Why better prompts matter ── */}
+        <div style={{
+          marginTop: 64,
+          padding: "40px 32px",
+          borderRadius: 20,
+          background: "white",
+          border: "1px solid rgba(0,0,0,0.04)",
+          boxShadow: "0 8px 30px rgba(0,0,0,0.04)",
+        }}>
+          <h2 style={{
+            fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 600,
+            marginBottom: 28, textAlign: "center", letterSpacing: "-0.4px",
+          }}>
+            Why better prompts matter
+          </h2>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              {
+                stat: "47%",
+                desc: "of AI users say they get useless answers on the first try",
+                source: "Industry research",
+                color: "#FF6E40",
+              },
+              {
+                stat: "3×",
+                desc: "better results on the first attempt with a well-structured prompt",
+                source: "Prompt engineering studies",
+                color: "#FF8A65",
+              },
+              {
+                stat: "23 min",
+                desc: "wasted per day by the average worker on AI retries and corrections",
+                source: "Workplace productivity research",
+                color: "#FFB74D",
+              },
+            ].map(({ stat, desc, source, color }) => (
+              <div key={stat} style={{
+                flex: "1 1 180px", textAlign: "center",
+                padding: "20px 16px", borderRadius: 16,
+                background: "rgba(255,110,64,0.03)",
+                border: "1px solid rgba(255,110,64,0.08)",
+              }}>
+                <div style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontSize: 44, fontWeight: 700, lineHeight: 1,
+                  color, marginBottom: 10,
+                }}>
+                  {stat}
+                </div>
+                <p style={{ fontSize: 14, color: "#4A4540", lineHeight: 1.5, marginBottom: 8 }}>
+                  {desc}
+                </p>
+                <p style={{ fontSize: 11, color: "#C0B8B0", fontStyle: "italic" }}>
+                  {source}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Footer */}
         <footer style={{ marginTop: 60, paddingBottom: 32, textAlign: "center", fontSize: 13, color: "#A09890" }}>
