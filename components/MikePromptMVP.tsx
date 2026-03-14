@@ -5,6 +5,7 @@ import PromptLibrary from "./PromptLibrary";
 import UseCases from "./UseCases";
 import About from "./About";
 import UserProfile, { type Profile, EMPTY_PROFILE } from "./UserProfile";
+import ModelComparison from "./ModelComparison";
 import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
 
 type Lang = "en" | "pl";
@@ -15,6 +16,7 @@ const T = {
     tab_polish: "✨ Polish",
     tab_library: "📚 Library",
     tab_usecases: "💡 Use Cases",
+    tab_models: "🧠 Models",
     tab_about: "👋 About",
     polished_today_plural: "prompts polished today",
     polished_today_single: "prompt polished today",
@@ -63,6 +65,7 @@ const T = {
     tab_polish: "✨ Poleruj",
     tab_library: "📚 Biblioteka",
     tab_usecases: "💡 Zastosowania",
+    tab_models: "🧠 Modele",
     tab_about: "👋 O nas",
     polished_today_plural: "promptów wypolerowanych dziś",
     polished_today_single: "prompt wypolerowany dziś",
@@ -109,6 +112,13 @@ const T = {
 };
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+
+const TOOL_DESCRIPTIONS: Record<string, { en: string; pl: string; icon: string }> = {
+  ChatGPT: { en: "Best all-rounder", pl: "Najlepszy ogólnie", icon: "🟢" },
+  Claude:  { en: "Documents & privacy", pl: "Dokumenty i prywatność", icon: "🟠" },
+  Gemini:  { en: "Best with Google apps", pl: "Integracja z Google", icon: "🔵" },
+  Copilot: { en: "Best for Office 365", pl: "Dla Office 365", icon: "🟣" },
+};
 
 const TOOL_ICONS: Record<string, string> = {
   "Claude": "🟠",
@@ -289,7 +299,7 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases" | "about">("polish");
+  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases" | "models" | "about">("polish");
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
@@ -391,6 +401,7 @@ const MikePromptMVP = () => {
     ["polish", t.tab_polish],
     ["library", t.tab_library],
     ["usecases", t.tab_usecases],
+    ["models", t.tab_models],
     ["about", t.tab_about],
   ] as const;
 
@@ -559,6 +570,9 @@ const MikePromptMVP = () => {
         {/* About tab */}
         {activeTab === "about" && <About lang={lang} />}
 
+        {/* Models tab */}
+        {activeTab === "models" && <ModelComparison lang={lang} />}
+
         {/* Use Cases tab */}
         {activeTab === "usecases" && (
           <UseCases
@@ -676,21 +690,39 @@ const MikePromptMVP = () => {
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 600, minWidth: 90 }}>{t.optimize_for}</span>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {["ChatGPT", "Claude", "Gemini", "Copilot"].map((chat) => (
-                    <button
-                      key={chat}
-                      onClick={() => setSelectedChat(chat)}
-                      style={{
-                        padding: "5px 12px", borderRadius: 100,
-                        border: selectedChat === chat ? "1px solid #FF8A65" : "1px solid var(--c-chip-border)",
-                        background: selectedChat === chat ? "rgba(255,110,64,0.07)" : "var(--c-card)",
-                        fontSize: 12,
-                        color: selectedChat === chat ? "#FF6E40" : "var(--c-text3)",
-                        fontWeight: selectedChat === chat ? 600 : 400,
-                        cursor: "pointer", transition: "all 0.15s",
-                      }}
-                    >{chat}</button>
-                  ))}
+                  {Object.entries(TOOL_DESCRIPTIONS).map(([chat, desc]) => {
+                    const isSelected = selectedChat === chat;
+                    const isRecommended = recommendation?.bestTool === chat && selectedChat !== chat;
+                    return (
+                      <button
+                        key={chat}
+                        onClick={() => setSelectedChat(chat)}
+                        style={{
+                          padding: "5px 12px 5px 10px", borderRadius: 10,
+                          border: isSelected ? "1px solid #FF8A65" : isRecommended ? "1px solid rgba(66,133,244,0.4)" : "1px solid var(--c-chip-border)",
+                          background: isSelected ? "rgba(255,110,64,0.07)" : isRecommended ? "rgba(66,133,244,0.05)" : "var(--c-card)",
+                          fontSize: 12, textAlign: "left",
+                          color: isSelected ? "#FF6E40" : "var(--c-text3)",
+                          fontWeight: isSelected ? 600 : 400,
+                          cursor: "pointer", transition: "all 0.15s",
+                          position: "relative",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ fontSize: 11 }}>{desc.icon}</span>
+                          <span>{chat}</span>
+                          {isRecommended && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: "#4285F4", background: "rgba(66,133,244,0.12)", borderRadius: 100, padding: "1px 5px", marginLeft: 2 }}>
+                              ✨
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 10, color: isSelected ? "rgba(255,110,64,0.7)" : "var(--c-text4)", marginTop: 1, fontWeight: 400 }}>
+                          {lang === "pl" ? desc.pl : desc.en}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
