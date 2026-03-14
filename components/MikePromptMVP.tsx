@@ -44,6 +44,7 @@ const T = {
     used_all: (n: number) => `You've used all ${n} free polishes. Drop your email to unlock more.`,
     unlock: "Unlock more",
     network_error: "Something went wrong. Please try again.",
+    rate_limit_error: "Mike is very busy right now — please wait a moment and try again.",
     mikes_version: "Mike's polished version",
     copy_prompt: "📋 Copy prompt",
     more_precise: (n: number) => `✨ Mike made your prompt ${n}% more precise`,
@@ -91,6 +92,7 @@ const T = {
     used_all: (n: number) => `Wykorzystałeś wszystkie ${n} darmowe polery. Podaj email, żeby odblokować więcej.`,
     unlock: "Odblokuj więcej",
     network_error: "Coś poszło nie tak. Spróbuj ponownie.",
+    rate_limit_error: "Mike jest teraz bardzo zajęty — poczekaj chwilę i spróbuj ponownie.",
     mikes_version: "Wypolerowana wersja Mike'a",
     copy_prompt: "📋 Kopiuj prompt",
     more_precise: (n: number) => `✨ Mike sprawił, że Twój prompt jest o ${n}% precyzyjniejszy`,
@@ -328,6 +330,7 @@ const MikePromptMVP = () => {
         }),
       });
       const data = await response.json();
+      if (response.status === 429 || data.error === "ratelimit") { setError("ratelimit"); setLoading(false); return; }
       if (!response.ok) throw new Error(data.error || "API error");
       const result = data.result || "Something went wrong. Try again.";
       setOptimized(result);
@@ -527,6 +530,7 @@ const MikePromptMVP = () => {
         onClose={() => setProfileOpen(false)}
         onSave={saveProfile}
         initialProfile={profile}
+        lang={lang}
       />
 
       {/* Main */}
@@ -535,7 +539,7 @@ const MikePromptMVP = () => {
         position: "relative", zIndex: 5,
       }}>
         {/* About tab */}
-        {activeTab === "about" && <About />}
+        {activeTab === "about" && <About lang={lang} />}
 
         {/* Use Cases tab */}
         {activeTab === "usecases" && (
@@ -838,6 +842,11 @@ const MikePromptMVP = () => {
           {error === "network" && (
             <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "var(--c-err-bg)", border: "1px solid var(--c-err-border)", fontSize: 14, color: "#E53935", textAlign: "center" }}>
               {t.network_error}
+            </div>
+          )}
+          {error === "ratelimit" && (
+            <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "rgba(255,152,0,0.08)", border: "1px solid rgba(255,152,0,0.25)", fontSize: 14, color: "#E65100", textAlign: "center" }}>
+              ⏳ {t.rate_limit_error}
             </div>
           )}
 

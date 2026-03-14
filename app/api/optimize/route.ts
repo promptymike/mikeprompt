@@ -109,17 +109,23 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-3-20240307",
         max_tokens: 600,
-        system: SYSTEM_PROMPT,
+        system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
       }),
     });
   } catch (err) {
     console.error("[optimize] Fetch failed:", err);
     return NextResponse.json({ error: "Network error" }, { status: 502 });
+  }
+
+  if (response.status === 429) {
+    console.warn("[optimize] Rate limited by Anthropic API");
+    return NextResponse.json({ error: "ratelimit" }, { status: 429 });
   }
 
   if (!response.ok) {

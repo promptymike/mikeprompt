@@ -1,0 +1,114 @@
+{
+  "finance": {
+    "segment": "finance",
+    "heroTitle": "AI Prompts for Finance Professionals",
+    "heroTitlePl": "Prompty AI dla profesjonalistów finansów",
+    "heroSubtitle": "Stop wasting hours on bad prompts. Mike turns your rough ideas into board-ready outputs — reports, forecasts, variance analysis, and more.",
+    "heroSubtitlePl": "Przestań tracić godziny na złe prompty. Mike zamienia twoje pomysły w profesjonalne wyniki — raporty, prognozy, analizy odchyleń i więcej.",
+    "heroCta": "Try Mike free — no sign up",
+    "heroCtaPl": "Wypróbuj Mike'a za darmo — bez rejestracji",
+    "role": "Finance Manager",
+    "painPoints": [
+      { "icon": "📊", "en": "Board reports that take hours to structure", "pl": "Raporty zarządu, których strukturowanie zajmuje godziny" },
+      { "icon": "📈", "en": "Cash flow forecasts with too many assumptions to juggle", "pl": "Prognozy przepływów pieniężnych z zbyt wieloma założeniami" },
+      { "icon": "💬", "en": "Variance commentary that sounds like every other month", "pl": "Komentarze do odchyleń brzmiące jak każdy inny miesiąc" },
+      { "icon": "⏰", "en": "Month-end close checklists rebuilt from scratch every time", "pl": "Listy zamknięcia miesiąca tworzone od zera za każdym razem" }
+    ],
+    "useCasePrompts": [
+      "prepare board report",
+      "build 3-scenario cash flow forecast for Q3",
+      "write budget variance commentary for executive team"
+    ],
+    "socialProof": [
+      { "quote": "I prepared our Q3 board pack in 40 minutes instead of a full day.", "name": "Marta K.", "role": "Finance Manager, Series B SaaS" },
+      { "quote": "Mike's prompts made my variance commentary sound like it was written by a CFO.", "name": "Tomasz W.", "role": "FP&A Analyst, Manufacturing" }
+    ],
+    "metaTitle": "MikePrompt for Finance — AI Prompts for Finance Managers & FP&A",
+    "metaDescription": "Free AI prompt optimizer built for finance professionals. Better board reports, forecasts, and variance commentary — in minutes not hours.",
+    "metaKeywords": "finance AI prompts, FP&A AI, board report AI, cash flow forecast AI, budget variance AI, finance manager tools"
+  },
+  "hr": {
+    "segment": "hr",
+    "heroTitle": "AI Prompts for HR Professionals",
+    "heroTitlePl": "Prompty AI dla specjalistów HR",
+    "heroSubtitle": "Better job descriptions, performance reviews, and employee communications — written in minutes, not hours.",
+    "heroSubtitlePl": "Lepsze opisy stanowisk, oceny pracownicze i komunikacja z pracownikami — napisane w minuty, nie godziny.",
+    "heroCta": "Try Mike free — no sign up",
+    "heroCtaPl": "Wypróbuj Mike'a za darmo — bez rejestracji",
+    "role": "HR",
+    "painPoints": [
+      { "icon": "📝", "en": "Job descriptions that attract the wrong candidates", "pl": "Opisy stanowisk przyciągające niewłaściwych kandydatów" },
+      { "icon": "💼", "en": "Performance reviews that take forever and say nothing useful", "pl": "Oceny pracownicze, które zajmują wieki i nic nie mówią" },
+      { "icon": "📧", "en": "Employee emails that sound cold or bureaucratic", "pl": "Emaile do pracowników brzmiące zimno lub biurokratycznie" },
+      { "icon": "🎯", "en": "Onboarding materials rebuilt every time someone new joins", "pl": "Materiały onboardingowe tworzone od nowa przy każdym nowym pracowniku" }
+    ],
+    "useCasePrompts": [
+      "write performance review for team member",
+      "write job description for senior accountant role",
+      "write onboarding plan for new hire"
+    ],
+    "socialProof": [
+      { "quote": "My performance reviews used to take 3 hours each. Now I'm done with a full cycle in a day.", "name": "Agnieszka B.", "role": "HR Manager, Tech Startup" },
+      { "quote": "The job description Mike helped me write got 40% more qualified applicants.", "name": "Piotr M.", "role": "Talent Acquisition, Scale-up" }
+    ],
+    "metaTitle": "MikePrompt for HR — AI Prompts for HR Professionals",
+    "metaDescription": "Free AI prompt optimizer for HR professionals. Better job descriptions, performance reviews, and employee communications — in minutes.",
+    "metaKeywords": "HR AI prompts, performance review AI, job description AI, HR tools, people operations AI"
+  },
+  "audit": {
+    "segment": "audit",
+    "heroTitle": "AI Prompts for Auditors & Accountants",
+    "heroTitlePl": "Prompty AI dla audytorów i księgowych",
+    "heroSubtitle": "Professional audit findings, working papers, and client communications — structured right, written fast.",
+    "heroSubtitlePl": "Profesjonalne ustalenia audytowe, papiery robocze i komunikacja z klientami — właściwie ustrukturyzowane, szybko napisane.",
+    "heroCta": "Try Mike free — no sign up",
+    "heroCtaPl": "Wypróbuj Mike'a za darmo — bez rejestracji",
+    "role": "Auditor",
+    "painPoints": [
+      { "icon": "🔍", "en": "Audit findings that take too long to structure properly", "pl": "Ustalenia audytowe, których właściwe ustrukturyzowanie zajmuje za dużo czasu" },
+      { "icon": "📋", "en": "Month-end checklists that miss steps under pressure", "pl": "Listy zamknięcia miesiąca, które pomijają kroki pod presją" },
+      { "icon": "📄", "en": "Management letter comments that sound too generic", "pl": "Komentarze do listu do zarządu brzmiące zbyt ogólnie" },
+      { "icon": "⚖️", "en": "IFRS/GAAP memos that take a full day to draft", "pl": "Memoranda IFRS/GAAP, których przygotowanie zajmuje cały dzień" }
+    ],
+    "useCasePrompts": [
+      "write internal audit finding with recommendation",
+      "summarize month-end closing checklist",
+      "write management letter comment on internal control weakness"
+    ],
+    "socialProof": [
+      { "quote": "My audit findings went from drafts that needed 3 review cycles to first-draft quality.", "name": "Krzysztof J.", "role": "Senior Auditor, Big 4" },
+      { "quote": "Saved me a full day on our year-end management letter. Every comment was structured and specific.", "name": "Anna S.", "role": "Audit Manager, Mid-tier firm" }
+    ],
+    "metaTitle": "MikePrompt for Audit — AI Prompts for Auditors & Accountants",
+    "metaDescription": "Free AI prompt optimizer for auditors and accountants. Better audit findings, working papers, and client communications — fast.",
+    "metaKeywords": "audit AI prompts, accounting AI, audit finding AI, management letter AI, IFRS AI, accountant tools"
+  },
+  "sales": {
+    "segment": "sales",
+    "heroTitle": "AI Prompts for Sales Professionals",
+    "heroTitlePl": "Prompty AI dla specjalistów sprzedaży",
+    "heroSubtitle": "Cold emails that get replies, discovery questions that uncover real pain, and follow-ups that close deals.",
+    "heroSubtitlePl": "Zimne emaile, które dostają odpowiedzi, pytania discovery odkrywające prawdziwe problemy i follow-upy zamykające deale.",
+    "heroCta": "Try Mike free — no sign up",
+    "heroCtaPl": "Wypróbuj Mike'a za darmo — bez rejestracji",
+    "role": "Sales Rep",
+    "painPoints": [
+      { "icon": "📧", "en": "Cold emails that land in the spam folder", "pl": "Zimne emaile lądujące w folderze spam" },
+      { "icon": "🤝", "en": "Discovery calls where you run out of questions", "pl": "Rozmowy discovery, gdzie kończy ci się pytania" },
+      { "icon": "📋", "en": "Proposals that take hours to tailor for each prospect", "pl": "Oferty, których dopasowanie do każdego klienta zajmuje godziny" },
+      { "icon": "🔄", "en": "Follow-ups that feel pushy or get ignored", "pl": "Follow-upy, które brzmią natarczywie lub są ignorowane" }
+    ],
+    "useCasePrompts": [
+      "prepare cold outreach message for CFO",
+      "write discovery call questions for B2B SaaS prospect",
+      "write follow-up email after demo call"
+    ],
+    "socialProof": [
+      { "quote": "My reply rate on cold outreach went from 3% to 11% after using Mike's prompts.", "name": "Łukasz R.", "role": "Account Executive, B2B SaaS" },
+      { "quote": "I used to spend 45 minutes writing one cold email. Now I have 5 variations in 10 minutes.", "name": "Karolina F.", "role": "SDR, FinTech Scale-up" }
+    ],
+    "metaTitle": "MikePrompt for Sales — AI Prompts for Sales Professionals",
+    "metaDescription": "Free AI prompt optimizer for sales teams. Better cold emails, discovery questions, and follow-ups — written in minutes.",
+    "metaKeywords": "sales AI prompts, cold email AI, discovery call AI, sales tools, B2B sales AI, SDR tools"
+  }
+}
