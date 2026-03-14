@@ -52,10 +52,11 @@ const T = {
 interface SavedPromptsProps {
   lang: Lang;
   onReuse: (prompt: string) => void;
+  onNavigate: (tab: string) => void;
   currentUser: SupabaseUser;
 }
 
-export default function SavedPrompts({ lang, onReuse, currentUser }: SavedPromptsProps) {
+export default function SavedPrompts({ lang, onReuse, onNavigate, currentUser }: SavedPromptsProps) {
   const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -140,7 +141,27 @@ export default function SavedPrompts({ lang, onReuse, currentUser }: SavedPrompt
       {loading ? (
         <p style={{ color: "var(--c-text3)", fontSize: 13 }}>{t.loading}</p>
       ) : prompts.length === 0 ? (
-        <p style={{ color: "var(--c-text3)", fontSize: 13 }}>{currentUser ? t.empty_logged : t.empty_local}</p>
+        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📂</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "var(--c-text1)", marginBottom: 8 }}>
+            {lang === "pl" ? "Brak zapisanych promptów" : "No saved prompts yet"}
+          </div>
+          <div style={{ fontSize: 14, color: "var(--c-text3)", marginBottom: 20 }}>
+            {lang === "pl"
+              ? "Wypoleruj swój pierwszy prompt — pojawi się tutaj"
+              : "Polish your first prompt — it'll appear here"}
+          </div>
+          <button
+            onClick={() => onNavigate("polish")}
+            style={{
+              padding: "10px 20px", borderRadius: 10, border: "none",
+              background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+              color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            {lang === "pl" ? "✨ Wypoleruj prompt →" : "✨ Polish a prompt →"}
+          </button>
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {prompts.map((prompt) => {

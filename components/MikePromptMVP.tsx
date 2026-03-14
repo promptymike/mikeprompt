@@ -199,6 +199,11 @@ const CSS_VARS = `
 header div[style*="overflowX"] { scrollbar-width: none; }
 header div[style*="overflowX"]::-webkit-scrollbar { display: none; }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 [data-theme="light"] {
   --c-page-bg: linear-gradient(165deg, #FFF8F0 0%, #FFF1E6 30%, #FFE8D6 60%, #FFDDC1 100%);
   --c-card: white;
@@ -314,6 +319,7 @@ const MikePromptMVP = () => {
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [profileOpen, setProfileOpen] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -335,6 +341,15 @@ const MikePromptMVP = () => {
         setCurrentUser(session?.user ? { id: session.user.id, email: session.user.email } : null);
       });
       return () => subscription.unsubscribe();
+    }
+  }, []);
+
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem("mikeprompt_onboarded");
+    const hasProfile = localStorage.getItem("mikeprompt_profile_v2");
+    if (!hasSeenOnboarding && !hasProfile) {
+      const timer = setTimeout(() => setShowOnboarding(true), 1500);
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -439,6 +454,23 @@ const MikePromptMVP = () => {
 
   const profileInitial = profile.name ? profile.name[0].toUpperCase() : null;
 
+  const profileCompletion = [profile.name, profile.role, profile.industry, profile.usage].filter(Boolean).length;
+
+  const profileIcon = () => {
+    if (currentUser) return profileInitial ?? "✓";
+    if (profileCompletion === 0) return "👤";
+    if (profileCompletion < 3) return profileInitial ?? "◐";
+    return profileInitial ?? "✓";
+  };
+
+  const profileTooltip = lang === "pl"
+    ? profileCompletion === 0
+      ? "Uzupełnij profil — Mike będzie skuteczniejszy!"
+      : `Profil: ${profileCompletion * 25}% uzupełniony`
+    : profileCompletion === 0
+      ? "Complete your profile — Mike will be more effective!"
+      : `Profile: ${profileCompletion * 25}% complete`;
+
   const TABS = [
     ["polish", t.tab_polish],
     ["library", t.tab_library],
@@ -529,9 +561,31 @@ const MikePromptMVP = () => {
             <button onClick={toggleLang} style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 11, fontWeight: 600, color: "var(--c-toggle-color)", cursor: "pointer", flexShrink: 0 }}>
               {lang === "en" ? "PL" : "EN"}
             </button>
-            <button onClick={() => setProfileOpen(true)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer", background: profileInitial ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)", color: profileInitial ? "white" : "var(--c-toggle-color)", fontSize: profileInitial ? 13 : 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", outline: "1px solid var(--c-toggle-border)", flexShrink: 0 }}>
-              {profileInitial ?? "👤"}
-            </button>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setProfileOpen(true)}
+                title={profileTooltip}
+                style={{
+                  width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
+                  background: (profileInitial || currentUser) ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)",
+                  color: (profileInitial || currentUser) ? "white" : "var(--c-toggle-color)",
+                  fontSize: profileInitial ? 13 : 15, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  outline: "1px solid var(--c-toggle-border)",
+                }}
+              >
+                {profileIcon()}
+              </button>
+              {profileCompletion === 0 && (
+                <div style={{
+                  position: "absolute", top: -2, right: -2,
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: "#FF6E40",
+                  border: "2px solid var(--c-page-bg-solid, white)",
+                  pointerEvents: "none",
+                }} />
+              )}
+            </div>
           </div>
         </div>
 
@@ -574,6 +628,55 @@ const MikePromptMVP = () => {
         lang={lang}
       />
 
+      {/* Onboarding toast */}
+      {showOnboarding && (
+        <div style={{
+          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          background: "var(--c-card)", borderRadius: 16,
+          border: "1px solid rgba(255,110,64,0.2)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          padding: "16px 20px", zIndex: 200,
+          display: "flex", alignItems: "center", gap: 14,
+          maxWidth: 420, width: "calc(100% - 48px)",
+          animation: "slideUp 0.4s ease",
+        }}>
+          <div style={{ fontSize: 32 }}>🎯</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text1)", marginBottom: 2 }}>
+              {lang === "pl" ? "Mike będzie lepszy jeśli Cię pozna" : "Mike works better when he knows you"}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--c-text3)" }}>
+              {lang === "pl" ? "Uzupełnij rolę i branżę — 30 sekund" : "Add your role and industry — 30 seconds"}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                setShowOnboarding(false);
+                setProfileOpen(true);
+                localStorage.setItem("mikeprompt_onboarded", "1");
+              }}
+              style={{
+                padding: "7px 14px", borderRadius: 8, border: "none",
+                background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                color: "white", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+              }}
+            >
+              {lang === "pl" ? "Uzupełnij →" : "Set up →"}
+            </button>
+            <button
+              onClick={() => {
+                setShowOnboarding(false);
+                localStorage.setItem("mikeprompt_onboarded", "1");
+              }}
+              style={{ fontSize: 11, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer" }}
+            >
+              {lang === "pl" ? "Później" : "Later"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main */}
       <main style={{
         maxWidth: 800, margin: "0 auto", padding: "20px 24px 60px",
@@ -591,6 +694,7 @@ const MikePromptMVP = () => {
               setInput(prompt); setActiveTab("polish");
               setShowResults(false); setOptimized(""); setFixes([]);
             }}
+            onNavigate={(tab) => setActiveTab(tab as "polish" | "library" | "usecases" | "models" | "history" | "about")}
           />
         )}
 

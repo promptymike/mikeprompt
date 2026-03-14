@@ -19,89 +19,6 @@ const AI_LEVELS_EN = ["Just starting", "I use it sometimes", "Daily user", "Powe
 const AI_LEVELS_PL = ["Dopiero zaczynam", "Używam od czasu do czasu", "Użytkownik dzienny", "Zaawansowany użytkownik"];
 const APP_CHIPS = ["Excel", "PowerPoint", "Google Sheets", "Word", "Salesforce", "Power BI", "SAP", "Other"];
 
-const T = {
-  en: {
-    header_title: "Your Profile",
-    header_sub: "Mike uses this to personalize your prompts",
-    cloud_title: "☁️ Save profile to cloud",
-    cloud_sub: "Sign in with email — access your profile on any device",
-    cloud_email_placeholder: "your@email.com",
-    cloud_send_code: "Send code",
-    cloud_sending: "Sending…",
-    cloud_code_placeholder: "6-digit code",
-    cloud_verify: "Verify",
-    cloud_verifying: "Verifying…",
-    cloud_code_hint: "Enter the 6-digit code sent to your email",
-    cloud_dev_hint: (token: string) => `[DEV] Code: ${token}`,
-    cloud_error_invalid: "Invalid or expired code. Try again.",
-    cloud_error_send: "Failed to send code. Try again.",
-    cloud_logged_as: "Signed in as",
-    cloud_sign_out: "(sign out)",
-    section_about: "About you",
-    section_goals: "Your goals",
-    section_tools: "Your tools",
-    section_ai: "Your experience with AI",
-    label_name: "Your name",
-    label_role: "Your role",
-    label_industry: "Your industry",
-    label_usage: "What do you use AI for?",
-    label_challenge: "Your biggest challenge?",
-    label_ai: "Which AI do you use most?",
-    label_apps: "Which apps do you work in?",
-    placeholder_name: "e.g. Anna",
-    placeholder_industry: "e.g. SaaS, Manufacturing, Retail",
-    placeholder_usage: "e.g. reports, emails, data analysis",
-    placeholder_challenge: "e.g. saving time on month-end close",
-    select_role: "Select role…",
-    select_ai: "Select AI…",
-    save_btn: "Save profile",
-    saved_btn: "✓ Profile saved!",
-    footer: "Mike uses this to personalize your prompts.",
-    footer2: "Nothing leaves your browser.",
-    ai_levels: AI_LEVELS_EN,
-  },
-  pl: {
-    header_title: "Twój profil",
-    header_sub: "Mike używa tego, aby personalizować twoje prompty",
-    cloud_title: "☁️ Zapisz profil w chmurze",
-    cloud_sub: "Zaloguj się emailem — profil dostępny na każdym urządzeniu",
-    cloud_email_placeholder: "twoj@email.com",
-    cloud_send_code: "Wyślij kod",
-    cloud_sending: "Wysyłanie…",
-    cloud_code_placeholder: "6-cyfrowy kod",
-    cloud_verify: "Weryfikuj",
-    cloud_verifying: "Weryfikowanie…",
-    cloud_code_hint: "Wpisz 6-cyfrowy kod wysłany na twój email",
-    cloud_dev_hint: (token: string) => `[DEV] Kod: ${token}`,
-    cloud_error_invalid: "Nieprawidłowy lub wygasły kod. Spróbuj ponownie.",
-    cloud_error_send: "Nie udało się wysłać kodu. Spróbuj ponownie.",
-    cloud_logged_as: "Zalogowany jako",
-    cloud_sign_out: "(wyloguj)",
-    section_about: "O tobie",
-    section_goals: "Twoje cele",
-    section_tools: "Twoje narzędzia",
-    section_ai: "Twoje doświadczenie z AI",
-    label_name: "Twoje imię",
-    label_role: "Twoja rola",
-    label_industry: "Twoja branża",
-    label_usage: "Do czego używasz AI?",
-    label_challenge: "Twoje największe wyzwanie?",
-    label_ai: "Którego AI używasz najczęściej?",
-    label_apps: "W jakich aplikacjach pracujesz?",
-    placeholder_name: "np. Anna",
-    placeholder_industry: "np. SaaS, Produkcja, Handel",
-    placeholder_usage: "np. raporty, emaile, analiza danych",
-    placeholder_challenge: "np. oszczędność czasu przy zamknięciu miesiąca",
-    select_role: "Wybierz rolę…",
-    select_ai: "Wybierz AI…",
-    save_btn: "Zapisz profil",
-    saved_btn: "✓ Profil zapisany!",
-    footer: "Mike używa tego, aby personalizować twoje prompty.",
-    footer2: "Nic nie opuszcza twojej przeglądarki.",
-    ai_levels: AI_LEVELS_PL,
-  },
-};
-
 type SupabaseUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
 interface UserProfileProps {
@@ -123,7 +40,6 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
   const [currentUser, setCurrentUser] = useState<SupabaseUser>(null);
-  const t = T[lang];
 
   useEffect(() => { setP(initialProfile); }, [initialProfile]);
 
@@ -263,13 +179,17 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
     </div>
   );
 
-  const SectionLabel = ({ icon, text }: { icon: string; text: string }) => (
+  const SectionHeader = ({ icon, text, hint }: { icon: string; text: string; hint?: string }) => (
     <div style={{
-      fontSize: 11, fontWeight: 700, color: "var(--c-text3)",
-      textTransform: "uppercase", letterSpacing: "0.5px",
-      margin: "20px 0 10px", display: "flex", alignItems: "center", gap: 6,
+      display: "flex", alignItems: "center", gap: 6, marginBottom: 10, marginTop: 18,
     }}>
-      <span>{icon}</span> {text}
+      <span style={{ fontSize: 14 }}>{icon}</span>
+      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+        {text}
+      </span>
+      {hint && (
+        <span style={{ fontSize: 10, color: "var(--c-text4)", marginLeft: "auto" }}>{hint}</span>
+      )}
     </div>
   );
 
@@ -288,233 +208,169 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
       />
 
       {/* Sidebar */}
-      <div style={{
-        position: "fixed", top: 0, right: 0,
-        width: 340, height: "100vh",
-        background: "var(--c-sidebar)",
-        borderLeft: "1px solid var(--c-card-border)",
-        zIndex: 101,
-        transform: open ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
-        display: "flex", flexDirection: "column",
-        boxShadow: "-12px 0 40px rgba(0,0,0,0.15)",
-      }}>
+      <div
+        data-theme-inherit
+        style={{
+          position: "fixed", top: 0, right: 0,
+          width: 340, height: "100vh",
+          background: "var(--c-sidebar)",
+          borderLeft: "1px solid var(--c-card-border)",
+          zIndex: 101,
+          transform: open ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+          display: "flex", flexDirection: "column",
+          boxShadow: "-12px 0 40px rgba(0,0,0,0.15)",
+        }}
+      >
         {/* Header */}
-        <div style={{
-          padding: "18px 20px 14px",
-          borderBottom: "1px solid var(--c-sep)",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          flexShrink: 0,
-        }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text1)", fontFamily: "'Fraunces', serif" }}>
-              {t.header_title}
+        <div style={{ padding: "20px 20px 0" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--c-text1)", fontFamily: "'Fraunces', serif" }}>
+                {lang === "pl" ? "Powiedz Mike'owi o sobie" : "Tell Mike about yourself"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--c-text3)", marginTop: 2 }}>
+                {lang === "pl"
+                  ? "Mike dostosuje prompty do Twojej pracy"
+                  : "Mike will tailor prompts to your work"}
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: "var(--c-text3)", marginTop: 2 }}>
-              {t.header_sub}
-            </div>
+            <button
+              onClick={onClose}
+              style={{
+                width: 28, height: 28, borderRadius: 8,
+                border: "1px solid var(--c-card-border)",
+                background: "var(--c-card)", cursor: "pointer",
+                fontSize: 16, color: "var(--c-text3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, marginLeft: 8,
+              }}
+            >×</button>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 30, height: 30, borderRadius: 8,
-              border: "1px solid var(--c-card-border)",
-              background: "var(--c-card)", cursor: "pointer",
-              fontSize: 18, color: "var(--c-text3)", lineHeight: 1,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >×</button>
+
+          {/* Benefit pills */}
+          <div style={{ display: "flex", gap: 6, marginTop: 12, marginBottom: 4, flexWrap: "wrap" }}>
+            {[
+              lang === "pl" ? "✨ Lepsze prompty" : "✨ Better prompts",
+              lang === "pl" ? "🎯 Trafniejsze wyniki" : "🎯 Precise results",
+              lang === "pl" ? "⚡ Szybciej" : "⚡ Faster",
+            ].map(pill => (
+              <span key={pill} style={{
+                fontSize: 11, padding: "3px 10px", borderRadius: 100,
+                background: "rgba(255,110,64,0.08)", color: "#FF6E40",
+                border: "1px solid rgba(255,110,64,0.2)", fontWeight: 500,
+              }}>{pill}</span>
+            ))}
+          </div>
         </div>
 
-        {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 16px" }}>
-          {/* Cloud login section */}
-          {!currentUser ? (
-            <div style={{
-              background: "rgba(255,110,64,0.04)",
-              border: "1px solid rgba(255,110,64,0.18)",
-              borderRadius: 14,
-              padding: "16px",
-              marginBottom: 16,
-            }}>
-              {/* Header z przełącznikiem Login/Zarejestruj */}
-              <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-                {(["login", "register"] as const).map(mode => (
-                  <button
-                    key={mode}
-                    onClick={() => { setAuthMode(mode); setAuthError(""); setAuthSuccess(""); }}
-                    style={{
-                      flex: 1, padding: "6px", borderRadius: 8, border: "none",
-                      background: authMode === mode ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-card)",
-                      color: authMode === mode ? "white" : "var(--c-text3)",
-                      fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    }}
-                  >
-                    {mode === "login"
-                      ? (lang === "pl" ? "Zaloguj się" : "Sign in")
-                      : (lang === "pl" ? "Zarejestruj się" : "Sign up")}
-                  </button>
-                ))}
-              </div>
+        {/* Separator */}
+        <div style={{ height: 1, background: "var(--c-sep)", margin: "12px 0 0" }} />
 
-              {/* Imię — tylko przy rejestracji */}
-              {authMode === "register" && (
-                <input
-                  type="text"
-                  value={authName}
-                  onChange={e => setAuthName(e.target.value)}
-                  placeholder={lang === "pl" ? "Imię (opcjonalnie)" : "Name (optional)"}
-                  style={{ ...inputStyle, marginBottom: 8, fontSize: 13 }}
-                />
-              )}
+        {/* Scrollable content — profile first */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 16px" }}>
 
-              {/* Email */}
-              <input
-                type="email"
-                value={authEmail}
-                onChange={e => setAuthEmail(e.target.value)}
-                placeholder="email@example.com"
-                style={{ ...inputStyle, marginBottom: 8, fontSize: 13 }}
-              />
+          {/* Section: About you */}
+          <SectionHeader
+            icon="👤"
+            text={lang === "pl" ? "O Tobie" : "About you"}
+            hint={lang === "pl" ? "Mike używa tego żeby..." : "Mike uses this to..."}
+          />
 
-              {/* Hasło — login i register */}
-              {authMode !== "reset" && (
-                <input
-                  type="password"
-                  value={authPassword}
-                  onChange={e => setAuthPassword(e.target.value)}
-                  placeholder={lang === "pl" ? "Hasło (min. 8 znaków)" : "Password (min. 8 chars)"}
-                  onKeyDown={e => e.key === "Enter" && handleAuth()}
-                  style={{ ...inputStyle, marginBottom: 10, fontSize: 13 }}
-                />
-              )}
-
-              {/* Error / Success */}
-              {authError && <div style={{ fontSize: 12, color: "#E53935", marginBottom: 8 }}>{authError}</div>}
-              {authSuccess && <div style={{ fontSize: 12, color: "#43A047", marginBottom: 8 }}>{authSuccess}</div>}
-
-              {/* Główny przycisk */}
-              {authMode !== "reset" && (
-                <button
-                  onClick={handleAuth}
-                  disabled={authLoading}
-                  style={{
-                    width: "100%", padding: "10px", borderRadius: 10, border: "none",
-                    background: authLoading ? "#FFAB91" : "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                    color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 8,
-                  }}
-                >
-                  {authLoading ? "⏳..." : authMode === "login"
-                    ? (lang === "pl" ? "Zaloguj się" : "Sign in")
-                    : (lang === "pl" ? "Stwórz konto" : "Create account")}
-                </button>
-              )}
-
-              {/* Zapomniałem hasła */}
-              {authMode === "login" && (
-                <button
-                  onClick={() => { setAuthMode("reset"); setAuthError(""); }}
-                  style={{ background: "none", border: "none", fontSize: 11, color: "var(--c-text4)", cursor: "pointer", textDecoration: "underline" }}
-                >
-                  {lang === "pl" ? "Zapomniałem hasła" : "Forgot password?"}
-                </button>
-              )}
-
-              {/* Reset password view */}
-              {authMode === "reset" && (
-                <>
-                  <button
-                    onClick={handleAuth}
-                    disabled={authLoading}
-                    style={{ width: "100%", padding: "10px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #FF6E40, #FF8A65)", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}
-                  >
-                    {authLoading ? "⏳..." : (lang === "pl" ? "Wyślij link resetujący" : "Send reset link")}
-                  </button>
-                  <button onClick={() => setAuthMode("login")} style={{ background: "none", border: "none", fontSize: 11, color: "var(--c-text4)", cursor: "pointer", textDecoration: "underline" }}>
-                    {lang === "pl" ? "← Wróć do logowania" : "← Back to login"}
-                  </button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: "rgba(67,160,71,0.06)", borderRadius: 10 }}>
-              <span style={{ fontSize: 14 }}>✅</span>
-              <span style={{ fontSize: 12, color: "#43A047", fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.email}</span>
-              <button onClick={handleLogout} style={{ fontSize: 11, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
-                {lang === "pl" ? "wyloguj" : "sign out"}
-              </button>
-            </div>
-          )}
-
-          {/* About you */}
-          <SectionLabel icon="👤" text={t.section_about} />
-          <Field label={t.label_name}>
+          <Field label={lang === "pl" ? "Twoje imię" : "Your name"}>
             <input
               type="text" value={p.name} maxLength={200}
               onChange={(e) => setP({ ...p, name: e.target.value })}
-              placeholder={t.placeholder_name}
+              placeholder={lang === "pl" ? "np. Anna" : "e.g. Anna"}
               style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
             />
           </Field>
-          <Field label={t.label_role}>
+
+          <Field label={lang === "pl" ? "Twoja rola" : "Your role"}>
             <select
               value={p.role}
               onChange={(e) => setP({ ...p, role: e.target.value })}
               style={{ ...inputStyle, cursor: "pointer" }}
             >
-              <option value="">{t.select_role}</option>
+              <option value="">{lang === "pl" ? "Wybierz rolę…" : "Select role…"}</option>
               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
+            <div style={{ fontSize: 11, color: "var(--c-text4)", marginTop: 4 }}>
+              {lang === "pl"
+                ? "💡 np. wybieram 'Finance' → Mike dodaje kontekst finansowy do każdego promptu"
+                : "💡 e.g. select 'Finance' → Mike adds financial context to every prompt"}
+            </div>
           </Field>
-          <Field label={t.label_industry}>
+
+          <Field label={lang === "pl" ? "Twoja branża" : "Your industry"}>
             <input
               type="text" value={p.industry} maxLength={200}
               onChange={(e) => setP({ ...p, industry: e.target.value })}
-              placeholder={t.placeholder_industry}
+              placeholder={lang === "pl" ? "np. SaaS, Produkcja, Handel" : "e.g. SaaS, Manufacturing, Retail"}
               style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
             />
           </Field>
 
-          {/* Goals */}
-          <SectionLabel icon="🎯" text={t.section_goals} />
-          <Field label={t.label_usage}>
+          {/* Live preview */}
+          {p.role && (
+            <div style={{
+              background: "rgba(255,110,64,0.04)",
+              border: "1px solid rgba(255,110,64,0.15)",
+              borderRadius: 10,
+              padding: "10px 12px",
+              marginTop: 4,
+              marginBottom: 4,
+              fontSize: 12,
+            }}>
+              <span style={{ color: "var(--c-text3)" }}>
+                {lang === "pl" ? "Twoje prompty będą teraz pisane dla " : "Your prompts will now be written for "}
+              </span>
+              <span style={{ color: "#FF6E40", fontWeight: 600 }}>
+                {p.role}{p.industry ? ` · ${p.industry}` : ""}
+              </span>
+              <span style={{ color: "var(--c-text3)" }}> 🎯</span>
+            </div>
+          )}
+
+          {/* Section: How you use AI */}
+          <SectionHeader
+            icon="🎯"
+            text={lang === "pl" ? "Jak używasz AI" : "How you use AI"}
+          />
+
+          <Field label={lang === "pl" ? "Do czego używasz AI?" : "What do you use AI for?"}>
             <input
               type="text" value={p.usage} maxLength={200}
               onChange={(e) => setP({ ...p, usage: e.target.value })}
-              placeholder={t.placeholder_usage}
+              placeholder={lang === "pl" ? "np. raporty, emaile, analiza danych" : "e.g. reports, emails, data analysis"}
               style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
-            />
-          </Field>
-          <Field label={t.label_challenge}>
-            <input
-              type="text" value={p.challenge} maxLength={200}
-              onChange={(e) => setP({ ...p, challenge: e.target.value })}
-              placeholder={t.placeholder_challenge}
-              style={inputStyle}
-              onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
             />
           </Field>
 
-          {/* Tools */}
-          <SectionLabel icon="🛠️" text={t.section_tools} />
-          <Field label={t.label_ai}>
+          <Field label={lang === "pl" ? "Twoje największe wyzwanie?" : "Your biggest challenge?"}>
+            <input
+              type="text" value={p.challenge} maxLength={200}
+              onChange={(e) => setP({ ...p, challenge: e.target.value })}
+              placeholder={lang === "pl" ? "np. oszczędność czasu przy zamknięciu miesiąca" : "e.g. saving time on month-end close"}
+              style={inputStyle}
+            />
+          </Field>
+
+          {/* Section: Your tools */}
+          <SectionHeader icon="🛠️" text={lang === "pl" ? "Twoje narzędzia" : "Your tools"} />
+
+          <Field label={lang === "pl" ? "Którego AI używasz najczęściej?" : "Which AI do you use most?"}>
             <select
               value={p.aiPreferred}
               onChange={(e) => setP({ ...p, aiPreferred: e.target.value })}
               style={{ ...inputStyle, cursor: "pointer" }}
             >
-              <option value="">{t.select_ai}</option>
+              <option value="">{lang === "pl" ? "Wybierz AI…" : "Select AI…"}</option>
               {AI_TOOLS.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
           </Field>
-          <Field label={t.label_apps}>
+
+          <Field label={lang === "pl" ? "W jakich aplikacjach pracujesz?" : "Which apps do you work in?"}>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {APP_CHIPS.map((app) => {
                 const active = p.apps.includes(app);
@@ -536,11 +392,12 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
             </div>
           </Field>
 
-          {/* AI Experience */}
-          <SectionLabel icon="📊" text={t.section_ai} />
+          {/* Section: AI Level */}
+          <SectionHeader icon="📊" text={lang === "pl" ? "Twoje doświadczenie z AI" : "Your experience with AI"} />
+
           <Field>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {t.ai_levels.map((level, i) => {
+              {(lang === "pl" ? AI_LEVELS_PL : AI_LEVELS_EN).map((level, i) => {
                 const enLevel = AI_LEVELS_EN[i];
                 const active = p.aiLevel === enLevel;
                 return (
@@ -563,7 +420,8 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "14px 20px", borderTop: "1px solid var(--c-sep)", flexShrink: 0 }}>
+        <div style={{ padding: "12px 20px", borderTop: "1px solid var(--c-sep)", flexShrink: 0 }}>
+          {/* Main save button */}
           <button
             onClick={handleSave}
             style={{
@@ -573,11 +431,117 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                 : "linear-gradient(135deg, #FF6E40, #FF8A65)",
               color: saved ? "#43A047" : "white",
               fontSize: 14, fontWeight: 600, cursor: "pointer",
-              transition: "all 0.3s",
+              transition: "all 0.3s", marginBottom: 10,
             }}
-          >{saved ? t.saved_btn : t.save_btn}</button>
-          <p style={{ fontSize: 11, color: "var(--c-text3)", textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>
-            {t.footer}<br />{t.footer2}
+          >
+            {saved
+              ? (lang === "pl" ? "✓ Zapisano!" : "✓ Saved!")
+              : (lang === "pl" ? "Zapisz preferencje" : "Save preferences")}
+          </button>
+
+          {/* Cloud save — secondary */}
+          {!currentUser ? (
+            <div style={{
+              padding: "10px 12px",
+              background: "var(--c-count-bg)",
+              borderRadius: 10,
+              border: "1px solid var(--c-card-border)",
+            }}>
+              <div style={{ fontSize: 11, color: "var(--c-text3)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                ☁️ <span>{lang === "pl" ? "Zapisz w chmurze — dostępne na każdym urządzeniu" : "Save to cloud — available on any device"}</span>
+              </div>
+
+              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={e => setAuthEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  onKeyDown={e => e.key === "Enter" && handleAuth()}
+                  style={{
+                    flex: 1, padding: "7px 10px", borderRadius: 8,
+                    border: "1px solid var(--c-input-border)",
+                    fontSize: 12, background: "var(--c-input)",
+                    color: "var(--c-text1)", outline: "none",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                />
+                {authMode !== "reset" && (
+                  <input
+                    type="password"
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    placeholder={lang === "pl" ? "Hasło" : "Password"}
+                    onKeyDown={e => e.key === "Enter" && handleAuth()}
+                    style={{
+                      width: 76, padding: "7px 10px", borderRadius: 8,
+                      border: "1px solid var(--c-input-border)",
+                      fontSize: 12, background: "var(--c-input)",
+                      color: "var(--c-text1)", outline: "none",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  />
+                )}
+                <button
+                  onClick={handleAuth}
+                  disabled={authLoading}
+                  style={{
+                    padding: "7px 10px", borderRadius: 8, border: "none",
+                    background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                    color: "white", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}
+                >
+                  {authLoading ? "⏳" : authMode === "reset"
+                    ? (lang === "pl" ? "Wyślij" : "Send")
+                    : (lang === "pl" ? "Wejdź →" : "Go →")}
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <button
+                  onClick={() => { setAuthMode(authMode === "login" ? "register" : "login"); setAuthError(""); setAuthSuccess(""); }}
+                  style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                >
+                  {authMode === "login"
+                    ? (lang === "pl" ? "Nie mam konta → Zarejestruj" : "No account → Register")
+                    : (lang === "pl" ? "Mam już konto → Zaloguj" : "Have account → Sign in")}
+                </button>
+                {authMode === "login" && (
+                  <button
+                    onClick={() => { setAuthMode("reset"); setAuthError(""); }}
+                    style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    {lang === "pl" ? "Zapomniałem hasła" : "Forgot password?"}
+                  </button>
+                )}
+                {authMode === "reset" && (
+                  <button
+                    onClick={() => setAuthMode("login")}
+                    style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    {lang === "pl" ? "← Wróć" : "← Back"}
+                  </button>
+                )}
+              </div>
+
+              {authError && <div style={{ fontSize: 11, color: "#E53935", marginTop: 6 }}>{authError}</div>}
+              {authSuccess && <div style={{ fontSize: 11, color: "#43A047", marginTop: 6 }}>{authSuccess}</div>}
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(67,160,71,0.06)", borderRadius: 10 }}>
+              <span style={{ fontSize: 13 }}>☁️</span>
+              <span style={{ fontSize: 11, color: "#43A047", fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {currentUser.email}
+              </span>
+              <button onClick={handleLogout} style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+                {lang === "pl" ? "wyloguj" : "sign out"}
+              </button>
+            </div>
+          )}
+
+          <p style={{ fontSize: 10, color: "var(--c-text4)", textAlign: "center", marginTop: 8, lineHeight: 1.4 }}>
+            🔒 {lang === "pl" ? "Nic nie opuszcza Twojej przeglądarki" : "Nothing leaves your browser"}
           </p>
         </div>
       </div>
