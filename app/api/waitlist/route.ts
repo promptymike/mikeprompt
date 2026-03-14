@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const WAITLIST_FILE = path.join(process.cwd(), "waitlist.json");
 
@@ -18,6 +19,16 @@ function appendToWaitlist(entry: Record<string, string | null>) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  const { allowed } = checkRateLimit(ip, 3, 3_600_000);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { email, role, goal, name } = await req.json();
 
   if (!email || typeof email !== "string" || !email.includes("@")) {

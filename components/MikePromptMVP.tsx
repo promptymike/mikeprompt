@@ -52,6 +52,10 @@ const T = {
     network_error: "Something went wrong. Please try again.",
     rate_limit_error: "Mike is very busy right now — please wait a moment and try again.",
     geo_blocked_error: "MikePrompt is not available in your region. If you're using a VPN, try disabling it.",
+    err_ratelimit: "Slow down! Max 10 polishes per minute. Try again in a moment. ⏳",
+    err_region: "Mike isn't available in your region or via this VPN. Try disabling your VPN. 🌍",
+    err_overloaded: "Claude is very busy right now. Try again in 30 seconds. 🔥",
+    err_network: "Something went wrong. Please try again.",
     mikes_version: "Mike's polished version",
     copy_prompt: "📋 Copy prompt",
     more_precise: (n: number) => `✨ Mike made your prompt ${n}% more precise`,
@@ -103,6 +107,10 @@ const T = {
     network_error: "Coś poszło nie tak. Spróbuj ponownie.",
     rate_limit_error: "Mike jest teraz bardzo zajęty — poczekaj chwilę i spróbuj ponownie.",
     geo_blocked_error: "MikePrompt nie jest dostępny w Twoim regionie. Jeśli używasz VPN, spróbuj go wyłączyć.",
+    err_ratelimit: "Za szybko! Max 10 polerów na minutę. Spróbuj za chwilę. ⏳",
+    err_region: "Mike nie jest dostępny w Twoim regionie lub przez ten VPN. Spróbuj wyłączyć VPN. 🌍",
+    err_overloaded: "Claude jest teraz bardzo zajęty. Spróbuj za 30 sekund. 🔥",
+    err_network: "Coś poszło nie tak. Spróbuj ponownie.",
     mikes_version: "Wypolerowana wersja Mike'a",
     copy_prompt: "📋 Kopiuj prompt",
     more_precise: (n: number) => `✨ Mike sprawił, że Twój prompt jest o ${n}% precyzyjniejszy`,
@@ -467,9 +475,13 @@ const MikePromptMVP = () => {
         }),
       });
       const data = await response.json();
-      if (response.status === 429 || data.error === "ratelimit" || data.error === "RATE_LIMIT") { setError("ratelimit"); setLoading(false); return; }
-      if (response.status === 451 || data.error === "GEO_BLOCKED") { setError("geo"); setLoading(false); return; }
-      if (!response.ok) throw new Error(data.error || "API error");
+      if (!response.ok) {
+        const errKey = data.error;
+        if (errKey === "ratelimit") { setError("ratelimit"); setLoading(false); return; }
+        if (errKey === "region_blocked") { setError("region"); setLoading(false); return; }
+        if (errKey === "overloaded") { setError("overloaded"); setLoading(false); return; }
+        setError("network"); setLoading(false); return;
+      }
       const result = data.result || "Something went wrong. Try again.";
       setOptimized(result);
       setFixes(Array.isArray(data.fixes) ? data.fixes : []);
@@ -1116,19 +1128,19 @@ const MikePromptMVP = () => {
               </form>
             </div>
           )}
-          {error === "network" && (
-            <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "var(--c-err-bg)", border: "1px solid var(--c-err-border)", fontSize: 14, color: "#E53935", textAlign: "center" }}>
-              {t.network_error}
-            </div>
-          )}
-          {error === "ratelimit" && (
-            <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "rgba(255,152,0,0.08)", border: "1px solid rgba(255,152,0,0.25)", fontSize: 14, color: "#E65100", textAlign: "center" }}>
-              ⏳ {t.rate_limit_error}
-            </div>
-          )}
-          {error === "geo" && (
-            <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "rgba(255,152,0,0.08)", border: "1px solid rgba(255,152,0,0.25)", fontSize: 14, color: "#E65100", textAlign: "center" }}>
-              🌍 {t.geo_blocked_error}
+          {error && error !== "signup" && (
+            <div style={{
+              marginTop: 16, padding: "14px 24px", borderRadius: 12,
+              background: error === "region" ? "rgba(33,150,243,0.06)" : "var(--c-err-bg)",
+              border: `1px solid ${error === "region" ? "rgba(33,150,243,0.2)" : "var(--c-err-border)"}`,
+              fontSize: 14,
+              color: error === "region" ? "#1565C0" : "#E53935",
+              textAlign: "center",
+            }}>
+              {error === "ratelimit" && t.err_ratelimit}
+              {error === "region" && t.err_region}
+              {error === "overloaded" && t.err_overloaded}
+              {error === "network" && t.err_network}
             </div>
           )}
 

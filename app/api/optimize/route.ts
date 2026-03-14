@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
@@ -95,12 +96,26 @@ interface ParsedResponse {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "127.0.0.1";
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  // Layer 1: Upstash Redis (shared across instances)
   const { success } = await ratelimit.limit(ip);
   if (!success) {
     return NextResponse.json(
-      { error: "RATE_LIMIT", message: "Too many requests. Please wait a moment." },
-      { status: 429 }
+      { error: "ratelimit", message: "Too many requests. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
+  // Layer 2: In-memory (per instance, second line of defence)
+  const { allowed } = checkRateLimit(ip, 10, 60_000);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "ratelimit", message: "Too many requests. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
@@ -188,25 +203,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Network error" }, { status: 502 });
   }
 
-  if (response.status === 429) {
-    console.warn("[optimize] Rate limited by Anthropic API");
-    return NextResponse.json({ error: "ratelimit" }, { status: 429 });
-  }
-
-  if (response.status === 403) {
-    console.warn("[optimize] Anthropic API returned 403 (geo/access block)");
-    return NextResponse.json(
-      { error: "GEO_BLOCKED", message: "MikePrompt is not available in your region. This may be due to geographic restrictions or VPN routing." },
-      { status: 451 }
-    );
-  }
-
   if (!response.ok) {
     const errText = await response.text();
-    console.error(`[optimize] Anthropic API error ${response.status}:`, errText);
-    console.error(`[optimize] Model used: ${ANTHROPIC_MODEL}`);
+    console.error(`[optimize] Anthropic error ${response.status}:`, errText);
+
+    if (response.status === 429) {
+      return NextResponse.json({ error: "ratelimit" }, { status: 429 });
+    }
+    if (response.status === 403) {
+      return NextResponse.json({ error: "region_blocked" }, { status: 403 });
+    }
+    if (response.status === 529 || response.status === 503) {
+      return NextResponse.json({ error: "overloaded" }, { status: 503 });
+    }
+
     return NextResponse.json(
-      { error: `Upstream API error: ${response.status}` },
+      { error: `upstream_${response.status}` },
       { status: 502 }
     );
   }

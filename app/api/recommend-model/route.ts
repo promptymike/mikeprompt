@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
@@ -65,12 +66,24 @@ interface AnthropicResponse {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "127.0.0.1";
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
   const { success } = await ratelimit.limit(ip);
   if (!success) {
     return NextResponse.json(
-      { error: "RATE_LIMIT", message: "Too many requests. Please wait a moment." },
-      { status: 429 }
+      { error: "ratelimit", message: "Too many requests. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
+  const { allowed } = checkRateLimit(ip, 10, 60_000);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "ratelimit", message: "Too many requests. Please wait a moment." },
+      { status: 429, headers: { "Retry-After": "60" } }
     );
   }
 
