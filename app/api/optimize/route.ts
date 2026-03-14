@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
 import { checkRateLimit } from "@/lib/rateLimit";
-
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "60 s"),
-  prefix: "rl:optimize",
-});
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
@@ -101,16 +93,6 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-real-ip") ??
     "unknown";
 
-  // Layer 1: Upstash Redis (shared across instances)
-  const { success } = await ratelimit.limit(ip);
-  if (!success) {
-    return NextResponse.json(
-      { error: "ratelimit", message: "Too many requests. Please wait a moment." },
-      { status: 429, headers: { "Retry-After": "60" } }
-    );
-  }
-
-  // Layer 2: In-memory (per instance, second line of defence)
   const { allowed } = checkRateLimit(ip, 10, 60_000);
   if (!allowed) {
     return NextResponse.json(
