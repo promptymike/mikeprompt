@@ -377,6 +377,7 @@ const MikePromptMVP = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [authToast, setAuthToast] = useState<"success" | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -407,6 +408,20 @@ const MikePromptMVP = () => {
     if (!hasSeenOnboarding && !hasProfile) {
       const timer = setTimeout(() => setShowOnboarding(true), 1500);
       return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (hash.includes("access_token=")) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          window.history.replaceState(null, "", window.location.pathname);
+          setAuthToast("success");
+          setTimeout(() => setAuthToast(null), 4000);
+        }
+      });
     }
   }, []);
 
@@ -731,6 +746,26 @@ const MikePromptMVP = () => {
             >
               {lang === "pl" ? "Później" : "Later"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auth success toast */}
+      {authToast === "success" && (
+        <div style={{
+          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          background: "linear-gradient(135deg, #2E7D32, #388E3C)",
+          borderRadius: 16,
+          boxShadow: "0 8px 32px rgba(46,125,50,0.3)",
+          padding: "14px 20px", zIndex: 201,
+          display: "flex", alignItems: "center", gap: 12,
+          maxWidth: 400, width: "calc(100% - 48px)",
+          animation: "slideUp 0.4s ease",
+          color: "white",
+        }}>
+          <div style={{ fontSize: 28 }}>🎉</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>
+            {lang === "pl" ? "Email potwierdzony! Jesteś zalogowany." : "Email confirmed! You're signed in."}
           </div>
         </div>
       )}
