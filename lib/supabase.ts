@@ -3,9 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-export const hasSupabase = !!(supabaseUrl && supabaseAnonKey);
+// Validate that URL is a real HTTP/HTTPS URL (not a publishable key or empty string)
+const isValidUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
-// Client-side client (uses anon key)
+export const hasSupabase = !!(supabaseUrl && supabaseAnonKey && isValidUrl(supabaseUrl));
+
+// Client-side client (uses anon key) — null when Supabase is not configured
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const supabase: ReturnType<typeof createClient> = hasSupabase
   ? createClient(supabaseUrl, supabaseAnonKey)

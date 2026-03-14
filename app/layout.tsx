@@ -3,9 +3,9 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MikePrompt — Your AI Prompt Assistant",
+  title: "MikePrompt — AI Prompt Optimizer dla profesjonalistów",
   description:
-    "Stop guessing. Paste your prompt, Mike makes it better. Free prompt optimizer for finance, admin, accounting, sales and management professionals.",
+    "Wypoleruj swój prompt w 3 sekundy. Działa z ChatGPT, Claude, Gemini i każdym AI. Dla finansów, HR, sprzedaży i adminu.",
   keywords: [
     "AI prompt optimizer", "prompt engineering", "ChatGPT prompts", "Claude prompts",
     "finance AI", "accounting AI", "HR AI prompts", "prompt generator", "prompt improver",
@@ -13,18 +13,18 @@ export const metadata: Metadata = {
   ],
   robots: "index, follow",
   openGraph: {
-    title: "MikePrompt — Your AI Prompt Assistant",
+    title: "MikePrompt — AI Prompt Optimizer dla profesjonalistów",
     description:
-      "Stop guessing. Paste your prompt, Mike makes it better. Free prompt optimizer for finance, admin, accounting, sales and management professionals.",
+      "Wypoleruj swój prompt w 3 sekundy. Działa z ChatGPT, Claude, Gemini i każdym AI. Dla finansów, HR, sprzedaży i adminu.",
     url: "https://mikeprompt.com",
     siteName: "MikePrompt",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MikePrompt — Your AI Prompt Assistant",
+    title: "MikePrompt — AI Prompt Optimizer dla profesjonalistów",
     description:
-      "Stop guessing. Paste your prompt, Mike makes it better. Free prompt optimizer for finance, admin, accounting, sales and management professionals.",
+      "Wypoleruj swój prompt w 3 sekundy. Działa z ChatGPT, Claude, Gemini i każdym AI. Dla finansów, HR, sprzedaży i adminu.",
   },
 };
 
