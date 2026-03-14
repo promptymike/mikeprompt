@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
+
 const SYSTEM_PROMPT = `You are an expert AI model advisor. Your job is to recommend the top 3 AI models for a given task from this list:
 
 Available models:
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
         "anthropic-beta": "prompt-caching-2024-07-31",
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
+        model: ANTHROPIC_MODEL,
         max_tokens: 800,
         system: [
           {
@@ -105,6 +107,7 @@ export async function POST(req: NextRequest) {
   if (!response.ok) {
     const errText = await response.text();
     console.error(`[recommend-model] Anthropic API error ${response.status}:`, errText);
+    console.error(`[recommend-model] Model used: ${ANTHROPIC_MODEL}`);
     return NextResponse.json(
       { error: `Upstream API error: ${response.status}` },
       { status: 502 }

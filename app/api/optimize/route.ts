@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
+
 const SYSTEM_PROMPT = `You are Mike, an expert prompt engineer. Your job is to take a vague, incomplete prompt and transform it into one that gets excellent results from any AI.
 
 WHAT YOU FIX:
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
         "anthropic-beta": "prompt-caching-2024-07-31",
       },
       body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
+        model: ANTHROPIC_MODEL,
         max_tokens: 900,
         system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
@@ -176,6 +178,7 @@ export async function POST(req: NextRequest) {
   if (!response.ok) {
     const errText = await response.text();
     console.error(`[optimize] Anthropic API error ${response.status}:`, errText);
+    console.error(`[optimize] Model used: ${ANTHROPIC_MODEL}`);
     return NextResponse.json(
       { error: `Upstream API error: ${response.status}` },
       { status: 502 }
