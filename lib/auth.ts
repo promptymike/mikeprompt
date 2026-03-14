@@ -3,12 +3,15 @@ import { supabase, hasSupabase } from "./supabase";
 // REJESTRACJA
 export const signUp = async (email: string, password: string, name?: string) => {
   if (!hasSupabase) return { data: null, error: new Error("Supabase not configured") };
+  const redirectTo = typeof window !== "undefined"
+    ? `${window.location.origin}/auth/confirm`
+    : "http://localhost:3000/auth/confirm";
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { name },
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: redirectTo,
     },
   });
   return { data, error };

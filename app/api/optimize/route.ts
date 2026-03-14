@@ -34,7 +34,8 @@ TOOL SELECTION RULES:
 
 If the user has selected a specific tool and it differs from your recommendation, acknowledge their choice and explain why your recommendation might be better while validating their choice.
 
-OUTPUT FORMAT — respond ONLY with valid JSON (no markdown, no backticks):
+OUTPUT FORMAT — respond ONLY with raw JSON. No markdown, no backticks, no \`\`\`json fences.
+Start your response with { and end with }. Nothing before or after the JSON object.
 {
   "optimized": "improved prompt here",
   "fixes": ["short description of each fix"],
@@ -193,9 +194,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Empty response from API" }, { status: 502 });
   }
 
+  const cleanRaw = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
   let parsed: ParsedResponse;
   try {
-    parsed = JSON.parse(raw) as ParsedResponse;
+    parsed = JSON.parse(cleanRaw) as ParsedResponse;
   } catch {
     console.error("[optimize] JSON parse failed, raw:", raw.slice(0, 300));
     return NextResponse.json({ result: raw, fixes: [], recommendation: null });

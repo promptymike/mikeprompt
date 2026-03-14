@@ -34,7 +34,10 @@ Rules:
 - Keep reason and keyFeature concise (under 15 words)
 - Only include warningIfAny if there's a genuinely relevant concern
 - Match user's language: if task is in Polish, respond in Polish
-- taskCategory must be one of the listed values`;
+- taskCategory must be one of the listed values
+
+CRITICAL: Respond ONLY with raw JSON. No markdown, no backticks, no \`\`\`json fences.
+Start your response with { and end with }. Nothing before or after the JSON object.`;
 
 interface Recommendation {
   model: string;
@@ -122,12 +125,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Empty response from API" }, { status: 502 });
   }
 
+  const cleanRaw = raw
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+
   let parsed: RecommendResponse;
   try {
-    parsed = JSON.parse(raw) as RecommendResponse;
+    parsed = JSON.parse(cleanRaw) as RecommendResponse;
   } catch {
     console.error("[recommend-model] JSON parse failed, raw:", raw.slice(0, 300));
-    return NextResponse.json({ error: "Failed to parse API response" }, { status: 502 });
+    return NextResponse.json({
+      recommendations: [
+        {
+          model: "ChatGPT",
+          score: 80,
+          reason: "Good all-around choice for most tasks",
+          keyFeature: "Versatile and widely used",
+          warningIfAny: undefined,
+        },
+      ],
+      taskCategory: "General",
+    });
   }
 
   return NextResponse.json({

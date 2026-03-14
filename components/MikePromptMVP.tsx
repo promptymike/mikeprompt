@@ -183,6 +183,63 @@ const PRO_TIPS = [
   "End with 'Before you start, ask me 3 clarifying questions' for complex tasks",
 ];
 
+const PRO_TIPS_PL = [
+  "Zawsze określ grupę docelową — AI pisze inaczej dla CEO niż dla kolegi",
+  "Dodaj 'Formatuj jako...' na końcu żeby kontrolować strukturę odpowiedzi",
+  "Powiedz AI czego unikać — to tak samo ważne jak co ma zrobić",
+  "Podziel złożone zadania na numerowane kroki dla lepszych wyników",
+  "Określ ton: formalny, swobodny, techniczny — nie zostawiaj tego przypadkowi",
+  "Podaj przykład jak powinien wyglądać dobry wynik",
+  "Ustaw limit słów lub stron — bez tego AI będzie się rozpisywać",
+  "Zacznij od roli: 'Działaj jako starszy analityk finansowy...' — zmienia wszystko",
+  "Przy analizie określ jakie dane są najważniejsze",
+  "Poproś o plusy I minusy — AI domyślnie skupia się na pozytywach",
+  "Podaj ramy czasowe — 'ostatni kwartał' znaczy różne rzeczy dla różnych AI",
+  "Jedno zadanie, jeden prompt. Złożone prośby podziel na osobne prompty",
+  "Dodaj kontekst co już wiesz — unikniesz podstawowych wyjaśnień",
+  "Powiedz AI jaki masz poziom wiedzy żeby dostosował głębokość odpowiedzi",
+  "Zakończ słowami 'Zanim zaczniesz, zadaj mi 3 pytania wyjaśniające' przy trudnych zadaniach",
+];
+
+const getLocalizedProTip = (englishTip: string, lang: Lang): string => {
+  if (lang === "en") return englishTip;
+  const index = PRO_TIPS.indexOf(englishTip);
+  if (index >= 0 && index < PRO_TIPS_PL.length) return PRO_TIPS_PL[index];
+  return englishTip;
+};
+
+const getFunMessage = (prompt: string, lang: Lang): string => {
+  const patterns: Array<[RegExp, string, string]> = [
+    [/auto|samoch|fura|car|vehicle/i, "🚗 Szykuje się fajna fura!", "🚗 Looks like a sweet ride incoming!"],
+    [/laptop|komputer|computer|mac\b|pc\b/i, "💻 Nowy sprzęt w drodze?", "💻 New gear incoming?"],
+    [/email|mail|wiadom/i, "📧 Ten email trafi prosto do celu!", "📧 This email will hit the mark!"],
+    [/raport|report|analiz/i, "📊 Szef będzie pod wrażeniem!", "📊 Your boss will be impressed!"],
+    [/prezentac|presentation|slajd|slide/i, "🎯 Niezapomniana prezentacja!", "🎯 Unforgettable presentation!"],
+    [/oferta|proposal|pitch/i, "💼 Deal w zasięgu ręki!", "💼 That deal is as good as closed!"],
+    [/\bcv\b|resume|praca|job/i, "✨ Rekruter to zauważy!", "✨ The recruiter will notice!"],
+    [/excel|arkusz|spreadsheet/i, "📈 Excel nigdy tak dobrze nie wyglądał!", "📈 Excel never looked this good!"],
+    [/budżet|budget|finanse|finance/i, "💰 CFO będzie zadowolony!", "💰 The CFO will be pleased!"],
+    [/audit|audyt|kontrola/i, "🔍 Audytor bez zarzutów!", "🔍 Audit-proof!"],
+    [/\bhr\b|rekrutac|hiring/i, "👥 Znajdziesz idealnego kandydata!", "👥 Perfect candidate incoming!"],
+  ];
+  for (const [pattern, msgPl, msgEn] of patterns) {
+    if (pattern.test(prompt)) return lang === "pl" ? msgPl : msgEn;
+  }
+  const defaults = lang === "pl"
+    ? ["🔥 Mike dał z siebie wszystko!", "✨ Prompt na poziomie pro!", "🚀 To dopiero robota!"]
+    : ["🔥 Mike gave it everything!", "✨ Pro-level prompt!", "🚀 Now that's a prompt!"];
+  return defaults[Math.floor(Math.random() * defaults.length)];
+};
+
+const getSavingsEstimate = (originalLength: number, fixesCount: number, lang: Lang): string => {
+  const minutesSaved = Math.min(2 + fixesCount * 3, 20);
+  const moneySaved = Math.round(minutesSaved * 0.5);
+  if (lang === "pl") {
+    return `⏱️ Szacowana oszczędność: ~${minutesSaved} min i ${moneySaved * 4} zł dzięki lepszemu promptowi`;
+  }
+  return `⏱️ Estimated savings: ~${minutesSaved} min and $${moneySaved} from getting it right first try`;
+};
+
 const TODAY_KEY = () => `mikeprompt_count_${new Date().toISOString().slice(0, 10)}`;
 const getStoredCount = () => {
   if (typeof window === "undefined") return 0;
@@ -508,15 +565,17 @@ const MikePromptMVP = () => {
       </div>
 
       {/* Nav — two-level sticky header */}
-      <header style={{
-        position: "sticky", top: 0, zIndex: 100,
-        background: "var(--c-page-bg-solid, rgba(255,248,240,0.95))",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid var(--c-card-border)",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(-20px)",
-        transition: "all 0.8s ease",
-      }}>
+      <header
+        data-theme={dark ? "dark" : "light"}
+        style={{
+          position: "sticky", top: 0, zIndex: 100,
+          background: "var(--c-card)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid var(--c-card-border)",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(-20px)",
+          transition: "all 0.8s ease",
+        }}>
         {/* Top row: Logo | Utility buttons */}
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -589,16 +648,15 @@ const MikePromptMVP = () => {
           </div>
         </div>
 
-        {/* Bottom row: Tabs (scroll on mobile, hidden scrollbar) */}
+        {/* Bottom row: Tabs — centered */}
         <div style={{
           padding: "0 24px 10px",
-          maxWidth: 1200, margin: "0 auto",
+          display: "flex", justifyContent: "center",
           overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none",
         }}>
           <div style={{
             display: "flex", gap: 2,
             background: "var(--c-tab-bar)", borderRadius: 10, padding: 3,
-            width: "fit-content", minWidth: "100%",
           }}>
             {TABS.map(([tab, label]) => (
               <button
@@ -1036,13 +1094,23 @@ const MikePromptMVP = () => {
               boxShadow: "var(--c-card-shadow)",
               overflow: "hidden", animation: "fadeUp 0.5s ease",
             }}>
+              {/* Header with fun message */}
               <div style={{
-                padding: "14px 24px", borderBottom: "1px solid var(--c-sep)",
+                padding: "12px 24px", background: "var(--c-green-bg)",
+                borderBottom: "1px solid var(--c-sep)",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "var(--c-green-bg)", flexWrap: "wrap", gap: 8,
+                flexWrap: "wrap", gap: 8,
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#43A047" }}>
-                  <span>✨</span> {t.mikes_version}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#43A047" }}>
+                    ✨ {t.mikes_version}
+                  </span>
+                  <span style={{
+                    fontSize: 12, color: "#FF6E40", fontWeight: 500,
+                    background: "rgba(255,110,64,0.08)", borderRadius: 100, padding: "2px 10px",
+                  }}>
+                    {getFunMessage(input, lang)}
+                  </span>
                 </div>
                 <button
                   onClick={() => copyText(optimized)}
@@ -1051,16 +1119,22 @@ const MikePromptMVP = () => {
                   onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-card-border)"; e.currentTarget.style.color = "var(--c-text2)"; }}
                 >{t.copy_prompt}</button>
               </div>
+
+              {/* Prompt text */}
               <div style={{ padding: "20px 24px" }}>
                 <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, lineHeight: 1.8, color: "var(--c-text1)", whiteSpace: "pre-wrap" }}>
                   {optimized}
                 </div>
               </div>
-              <div style={{ padding: "12px 24px", borderTop: "1px solid var(--c-sep)", background: "var(--c-stat-bg)" }}>
-                <span style={{ fontSize: 13, color: "var(--c-text2)" }}>
-                  {t.more_precise(precisionGain)}
+
+              {/* Savings estimate */}
+              <div style={{ padding: "8px 24px 10px", borderTop: "1px solid var(--c-sep)", background: "var(--c-stat-bg)" }}>
+                <span style={{ fontSize: 12, color: "var(--c-text3)" }}>
+                  {getSavingsEstimate(input.length, fixes.length, lang)}
                 </span>
               </div>
+
+              {/* What Mike fixed */}
               {fixes.length > 0 && (
                 <div style={{ padding: "16px 24px 20px", borderTop: "1px solid var(--c-sep)", background: "rgba(255,110,64,0.02)" }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.what_fixed}</div>
@@ -1073,48 +1147,55 @@ const MikePromptMVP = () => {
                   </div>
                 </div>
               )}
-              {/* AI Recommendation */}
+
+              {/* AI Recommendation — clean inline section */}
               {recommendation && (
-                <div style={{ padding: "16px 24px", borderTop: "1px solid var(--c-sep)", background: "rgba(66,133,244,0.03)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text4)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                    {lang === "pl" ? "🤖 Mike rekomenduje" : "🤖 Mike recommends"}
+                <div style={{ padding: "14px 24px", borderTop: "1px solid var(--c-sep)", background: "rgba(255,110,64,0.02)" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 18, lineHeight: 1.2, flexShrink: 0 }}>
+                      {TOOL_ICONS[recommendation.bestTool] ?? "🤖"}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text1)" }}>
+                          {lang === "pl" ? "Najlepszy model do tego zadania:" : "Best model for this task:"}
+                        </span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 700, color: "#FF6E40",
+                          background: "rgba(255,110,64,0.08)", borderRadius: 100, padding: "2px 10px",
+                          border: "1px solid rgba(255,110,64,0.2)",
+                        }}>
+                          {recommendation.bestTool}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13, color: "var(--c-text2)", marginBottom: 4 }}>{recommendation.reason}</div>
+                      {recommendation.tip && (
+                        <div style={{ fontSize: 12, color: "var(--c-text3)", fontStyle: "italic" }}>💡 {recommendation.tip}</div>
+                      )}
+                      {recommendation.alternativeTool && (
+                        <div style={{ fontSize: 11, color: "var(--c-text4)", marginTop: 6 }}>
+                          {lang === "pl" ? "Alternatywa:" : "Alternative:"} <strong>{recommendation.alternativeTool}</strong> — {recommendation.alternativeReason}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{
-                    background: "var(--c-card)",
-                    border: "2px solid rgba(255,110,64,0.3)",
-                    borderRadius: 12, padding: "12px 16px", marginBottom: 8,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 18 }}>{TOOL_ICONS[recommendation.bestTool] ?? "🤖"}</span>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text1)" }}>{recommendation.bestTool}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#FF6E40", background: "rgba(255,110,64,0.1)", borderRadius: 100, padding: "2px 8px" }}>
-                        {lang === "pl" ? "NAJLEPSZY WYBÓR" : "BEST CHOICE"}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 13, color: "var(--c-text2)", marginBottom: 6 }}>{recommendation.reason}</div>
-                    <div style={{ fontSize: 12, color: "#FF6E40", background: "rgba(255,110,64,0.05)", borderRadius: 8, padding: "6px 10px" }}>
-                      💡 {recommendation.tip}
-                    </div>
-                  </div>
-                  {recommendation.alternativeTool && (
-                    <div style={{ fontSize: 12, color: "var(--c-text3)", padding: "6px 4px" }}>
-                      {lang === "pl" ? "Alternatywnie:" : "Alternative:"}{" "}
-                      <strong>{recommendation.alternativeTool}</strong> — {recommendation.alternativeReason}
-                    </div>
-                  )}
                 </div>
               )}
 
+              {/* Pro tip — localized */}
               {proTip && (
                 <div style={{ padding: "14px 24px", borderTop: "1px solid var(--c-sep)", background: "var(--c-tip-bg)" }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <span style={{ fontSize: 14, lineHeight: 1.4 }}>💡</span>
                     <span style={{ fontSize: 12, color: "var(--c-text2)", lineHeight: 1.6 }}>
-                      <span style={{ fontWeight: 700, color: "#E65100" }}>{t.pro_tip_label}</span>{proTip}
+                      <span style={{ fontWeight: 700, color: "#E65100" }}>{t.pro_tip_label}</span>
+                      {getLocalizedProTip(proTip, lang)}
                     </span>
                   </div>
                 </div>
               )}
+
+              {/* Feedback */}
               <div style={{ padding: "14px 24px", borderTop: "1px solid var(--c-sep)", display: "flex", alignItems: "center", gap: 12 }}>
                 {feedback ? (
                   <span style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>{t.thanks_feedback}</span>

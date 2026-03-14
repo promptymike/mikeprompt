@@ -236,6 +236,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
               style={{
                 width: 28, height: 28, borderRadius: 8,
@@ -376,8 +377,9 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                 const active = p.apps.includes(app);
                 return (
                   <button
+                    type="button"
                     key={app}
-                    onClick={() => toggleApp(app)}
+                    onClick={(e) => { e.preventDefault(); toggleApp(app); }}
                     style={{
                       padding: "5px 11px", borderRadius: 100,
                       border: active ? "1px solid #FF8A65" : "1px solid var(--c-chip-border)",
@@ -402,8 +404,9 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                 const active = p.aiLevel === enLevel;
                 return (
                   <button
+                    type="button"
                     key={enLevel}
-                    onClick={() => setP({ ...p, aiLevel: enLevel })}
+                    onClick={(e) => { e.preventDefault(); setP({ ...p, aiLevel: enLevel }); }}
                     style={{
                       padding: "9px 14px", borderRadius: 10, textAlign: "left",
                       border: active ? "1px solid #FF8A65" : "1px solid var(--c-input-border)",
@@ -483,6 +486,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                   />
                 )}
                 <button
+                  type="button"
                   onClick={handleAuth}
                   disabled={authLoading}
                   style={{
@@ -500,6 +504,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <button
+                  type="button"
                   onClick={() => { setAuthMode(authMode === "login" ? "register" : "login"); setAuthError(""); setAuthSuccess(""); }}
                   style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
                 >
@@ -509,6 +514,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                 </button>
                 {authMode === "login" && (
                   <button
+                    type="button"
                     onClick={() => { setAuthMode("reset"); setAuthError(""); }}
                     style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -517,6 +523,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                 )}
                 {authMode === "reset" && (
                   <button
+                    type="button"
                     onClick={() => setAuthMode("login")}
                     style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
                   >
@@ -534,7 +541,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
               <span style={{ fontSize: 11, color: "#43A047", fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {currentUser.email}
               </span>
-              <button onClick={handleLogout} style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
+              <button type="button" onClick={handleLogout} style={{ fontSize: 10, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
                 {lang === "pl" ? "wyloguj" : "sign out"}
               </button>
             </div>
