@@ -1,25 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { type Profile, EMPTY_PROFILE, saveProfile as persistProfile } from "@/lib/profile";
+
+export type { Profile };
+export { EMPTY_PROFILE };
 
 type Lang = "en" | "pl";
-
-export interface Profile {
-  name: string;
-  role: string;
-  industry: string;
-  usage: string;
-  challenge: string;
-  aiPreferred: string;
-  apps: string[];
-  aiLevel: string;
-}
-
-export const EMPTY_PROFILE: Profile = {
-  name: "", role: "", industry: "",
-  usage: "", challenge: "",
-  aiPreferred: "", apps: [], aiLevel: "",
-};
 
 const ROLES = [
   "Finance Manager", "Accountant", "Auditor", "Admin/EA",
@@ -34,6 +21,20 @@ const T = {
   en: {
     header_title: "Your Profile",
     header_sub: "Mike uses this to personalize your prompts",
+    cloud_title: "☁️ Save profile to cloud",
+    cloud_sub: "Sign in with email — access your profile on any device",
+    cloud_email_placeholder: "your@email.com",
+    cloud_send_code: "Send code",
+    cloud_sending: "Sending…",
+    cloud_code_placeholder: "6-digit code",
+    cloud_verify: "Verify",
+    cloud_verifying: "Verifying…",
+    cloud_code_hint: "Enter the 6-digit code sent to your email",
+    cloud_dev_hint: (token: string) => `[DEV] Code: ${token}`,
+    cloud_error_invalid: "Invalid or expired code. Try again.",
+    cloud_error_send: "Failed to send code. Try again.",
+    cloud_logged_as: "Signed in as",
+    cloud_sign_out: "(sign out)",
     section_about: "About you",
     section_goals: "Your goals",
     section_tools: "Your tools",
@@ -60,6 +61,20 @@ const T = {
   pl: {
     header_title: "Twój profil",
     header_sub: "Mike używa tego, aby personalizować twoje prompty",
+    cloud_title: "☁️ Zapisz profil w chmurze",
+    cloud_sub: "Zaloguj się emailem — profil dostępny na każdym urządzeniu",
+    cloud_email_placeholder: "twoj@email.com",
+    cloud_send_code: "Wyślij kod",
+    cloud_sending: "Wysyłanie…",
+    cloud_code_placeholder: "6-cyfrowy kod",
+    cloud_verify: "Weryfikuj",
+    cloud_verifying: "Weryfikowanie…",
+    cloud_code_hint: "Wpisz 6-cyfrowy kod wysłany na twój email",
+    cloud_dev_hint: (token: string) => `[DEV] Kod: ${token}`,
+    cloud_error_invalid: "Nieprawidłowy lub wygasły kod. Spróbuj ponownie.",
+    cloud_error_send: "Nie udało się wysłać kodu. Spróbuj ponownie.",
+    cloud_logged_as: "Zalogowany jako",
+    cloud_sign_out: "(wyloguj)",
     section_about: "O tobie",
     section_goals: "Twoje cele",
     section_tools: "Twoje narzędzia",
@@ -85,6 +100,8 @@ const T = {
   },
 };
 
+type AuthStep = "idle" | "code_sent" | "verified";
+
 interface UserProfileProps {
   open: boolean;
   onClose: () => void;
@@ -96,6 +113,12 @@ interface UserProfileProps {
 export default function UserProfile({ open, onClose, onSave, initialProfile, lang = "en" }: UserProfileProps) {
   const [p, setP] = useState<Profile>(initialProfile);
   const [saved, setSaved] = useState(false);
+  const [authStep, setAuthStep] = useState<AuthStep>("idle");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [devToken, setDevToken] = useState("");
   const t = T[lang];
 
   useEffect(() => { setP(initialProfile); }, [initialProfile]);
@@ -111,8 +134,70 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
 
   const handleSave = () => {
     onSave(p);
+    persistProfile(p);
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
+  };
+
+  const handleLogout = () => {
+    const updated = { ...p, email: undefined, plan: undefined, createdAt: undefined };
+    setP(updated);
+    onSave(updated);
+    persistProfile(updated);
+    setAuthStep("idle");
+    setAuthEmail("");
+    setAuthCode("");
+    setAuthError("");
+    setDevToken("");
+  };
+
+  const handleSendCode = async () => {
+    if (!authEmail.includes("@")) return;
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const res = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: authEmail }),
+      });
+      const data = await res.json() as { success?: boolean; devToken?: string; error?: string };
+      if (!res.ok || !data.success) throw new Error(data.error ?? "Send failed");
+      if (data.devToken) setDevToken(data.devToken);
+      setAuthStep("code_sent");
+    } catch {
+      setAuthError(t.cloud_error_send);
+    }
+    setAuthLoading(false);
+  };
+
+  const handleVerify = async () => {
+    if (authCode.length < 6) return;
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const res = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: authEmail, token: authCode }),
+      });
+      const data = await res.json() as { success?: boolean; user?: { email: string; plan: string; createdAt: string }; error?: string };
+      if (!res.ok || !data.success) throw new Error(data.error ?? "Verify failed");
+      const updated: Profile = {
+        ...p,
+        email: authEmail,
+        plan: (data.user?.plan ?? "free") as "free" | "pro",
+        createdAt: data.user?.createdAt,
+      };
+      setP(updated);
+      onSave(updated);
+      persistProfile(updated);
+      setAuthStep("verified");
+      setDevToken("");
+    } catch {
+      setAuthError(t.cloud_error_invalid);
+    }
+    setAuthLoading(false);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -199,7 +284,107 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
         </div>
 
         {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 16px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 16px" }}>
+          {/* Cloud login section */}
+          {!p.email ? (
+            <div style={{
+              background: "rgba(255,110,64,0.06)",
+              border: "1px solid rgba(255,110,64,0.2)",
+              borderRadius: 12, padding: "14px 16px", marginBottom: 16,
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text1)", marginBottom: 4 }}>
+                {t.cloud_title}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--c-text3)", marginBottom: 12 }}>
+                {t.cloud_sub}
+              </div>
+
+              {authStep === "idle" && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder={t.cloud_email_placeholder}
+                    style={{ ...inputStyle, flex: 1, fontSize: 12 }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
+                    onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
+                  />
+                  <button
+                    onClick={handleSendCode}
+                    disabled={authLoading || !authEmail.includes("@")}
+                    style={{
+                      padding: "8px 12px", borderRadius: 10, border: "none",
+                      background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                      color: "white", fontSize: 12, fontWeight: 600,
+                      cursor: authEmail.includes("@") ? "pointer" : "default",
+                      opacity: authEmail.includes("@") ? 1 : 0.5,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {authLoading ? t.cloud_sending : t.cloud_send_code}
+                  </button>
+                </div>
+              )}
+
+              {authStep === "code_sent" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 11, color: "var(--c-text3)" }}>{t.cloud_code_hint}</div>
+                  {devToken && (
+                    <div style={{ fontSize: 11, color: "#FF6E40", fontFamily: "monospace" }}>
+                      {t.cloud_dev_hint(devToken)}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      type="text"
+                      value={authCode}
+                      onChange={(e) => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder={t.cloud_code_placeholder}
+                      maxLength={6}
+                      style={{ ...inputStyle, flex: 1, fontSize: 16, letterSpacing: "0.2em", textAlign: "center" }}
+                      onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+                      onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
+                      onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
+                    />
+                    <button
+                      onClick={handleVerify}
+                      disabled={authLoading || authCode.length < 6}
+                      style={{
+                        padding: "8px 12px", borderRadius: 10, border: "none",
+                        background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                        color: "white", fontSize: 12, fontWeight: 600,
+                        cursor: authCode.length === 6 ? "pointer" : "default",
+                        opacity: authCode.length === 6 ? 1 : 0.5,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {authLoading ? t.cloud_verifying : t.cloud_verify}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {authError && (
+                <div style={{ fontSize: 11, color: "#E53935", marginTop: 6 }}>{authError}</div>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#43A047", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              ✅ {t.cloud_logged_as} <strong>{p.email}</strong>
+              {p.plan === "pro" && (
+                <span style={{ fontSize: 10, background: "#FF6E40", color: "white", borderRadius: 100, padding: "1px 7px", fontWeight: 700 }}>PRO</span>
+              )}
+              <span
+                style={{ color: "var(--c-text4)", cursor: "pointer", marginLeft: "auto" }}
+                onClick={handleLogout}
+              >
+                {t.cloud_sign_out}
+              </span>
+            </div>
+          )}
+
           {/* About you */}
           <SectionLabel icon="👤" text={t.section_about} />
           <Field label={t.label_name}>
@@ -295,7 +480,6 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
           <Field>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {t.ai_levels.map((level, i) => {
-                // Match by index against EN levels for storage consistency
                 const enLevel = AI_LEVELS_EN[i];
                 const active = p.aiLevel === enLevel;
                 return (

@@ -5,6 +5,7 @@ import PromptLibrary from "./PromptLibrary";
 import UseCases from "./UseCases";
 import About from "./About";
 import UserProfile, { type Profile, EMPTY_PROFILE } from "./UserProfile";
+import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
 
 type Lang = "en" | "pl";
 
@@ -287,10 +288,8 @@ const MikePromptMVP = () => {
     if (storedLang === "pl" || storedLang === "en") setLang(storedLang);
     const storedDark = localStorage.getItem("mikeprompt_dark");
     if (storedDark === "1") setDark(true);
-    const storedProfile = localStorage.getItem("mikeprompt_profile");
-    if (storedProfile) {
-      try { setProfile(JSON.parse(storedProfile)); } catch { /* ignore */ }
-    }
+    const storedProfile = loadProfile();
+    if (storedProfile) setProfile(storedProfile);
   }, []);
 
   const toggleLang = () => {
@@ -307,7 +306,7 @@ const MikePromptMVP = () => {
 
   const saveProfile = (p: Profile) => {
     setProfile(p);
-    localStorage.setItem("mikeprompt_profile", JSON.stringify(p));
+    persistProfile(p);
   };
 
   const t = T[lang];
