@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         "anthropic-beta": "prompt-caching-2024-07-31",
       },
       body: JSON.stringify({
-        model: "claude-haiku-3-20240307",
+        model: "claude-3-haiku-20240307",
         max_tokens: 900,
         system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
