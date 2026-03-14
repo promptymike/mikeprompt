@@ -11,12 +11,14 @@ export type Profile = {
   plan?: "free" | "pro";
   polishesUsed?: number;
   createdAt?: string;
+  saveHistory?: boolean;
 };
 
 export const EMPTY_PROFILE: Profile = {
   name: "", role: "", industry: "",
   usage: "", challenge: "",
   aiPreferred: "", apps: [], aiLevel: "",
+  saveHistory: true,
 };
 
 const PROFILE_KEY = "mikeprompt_profile_v2";

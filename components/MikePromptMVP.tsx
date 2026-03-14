@@ -507,6 +507,7 @@ const MikePromptMVP = () => {
 
   const savePromptToDB = async (result: string, data: { fixes?: string[]; recommendation?: unknown }) => {
     if (!hasSupabase || !currentUser) return;
+    const userConsented = profile.saveHistory ?? true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from("saved_prompts") as any).insert({
       user_id: currentUser.id,
@@ -516,6 +517,8 @@ const MikePromptMVP = () => {
       selected_product: selectedProduct,
       fixes: data.fixes ?? [],
       recommendation: data.recommendation ?? null,
+      user_consented: userConsented,
+      created_at: new Date().toISOString(),
     });
   };
 
@@ -801,6 +804,8 @@ const MikePromptMVP = () => {
           <SavedPrompts
             lang={lang}
             currentUser={currentUser}
+            userProfile={profile}
+            onOpenProfile={() => setProfileOpen(true)}
             onReuse={(prompt) => {
               setInput(prompt); setActiveTab("polish");
               setShowResults(false); setOptimized(""); setFixes([]);

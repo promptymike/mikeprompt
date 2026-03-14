@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase, hasSupabase } from "@/lib/supabase";
+import { type Profile } from "@/lib/profile";
 
 type Lang = "en" | "pl";
 
@@ -54,9 +55,11 @@ interface SavedPromptsProps {
   onReuse: (prompt: string) => void;
   onNavigate: (tab: string) => void;
   currentUser: SupabaseUser;
+  userProfile?: Profile;
+  onOpenProfile?: () => void;
 }
 
-export default function SavedPrompts({ lang, onReuse, onNavigate, currentUser }: SavedPromptsProps) {
+export default function SavedPrompts({ lang, onReuse, onNavigate, currentUser, userProfile, onOpenProfile }: SavedPromptsProps) {
   const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -74,6 +77,7 @@ export default function SavedPrompts({ lang, onReuse, onNavigate, currentUser }:
       const { data } = await (supabase.from("saved_prompts") as any)
         .select("id, original_prompt, optimized_prompt, selected_chat, fixes, created_at")
         .eq("user_id", currentUser.id)
+        .eq("user_consented", true)
         .order("created_at", { ascending: false })
         .limit(50) as { data: SavedPrompt[] | null };
       setPrompts(data ?? []);
@@ -125,6 +129,31 @@ export default function SavedPrompts({ lang, onReuse, onNavigate, currentUser }:
           {currentUser ? t.subtitle_logged : t.subtitle_local}
         </p>
       </div>
+
+      {/* Notice when history saving is disabled */}
+      {currentUser && userProfile?.saveHistory === false && (
+        <div style={{
+          padding: "12px 16px", marginBottom: 16,
+          background: "rgba(255,183,77,0.08)", borderRadius: 12,
+          border: "1px solid rgba(255,183,77,0.2)",
+          fontSize: 13, color: "var(--c-text2)",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span>⚠️</span>
+          <span>
+            {lang === "pl"
+              ? "Zapisywanie historii jest wyłączone w Twoim profilu."
+              : "History saving is disabled in your profile settings."}
+            {" "}
+            <button
+              onClick={() => onOpenProfile?.()}
+              style={{ color: "#FF6E40", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, textDecoration: "underline" }}
+            >
+              {lang === "pl" ? "Włącz →" : "Enable →"}
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* CTA for non-logged users */}
       {!currentUser && (

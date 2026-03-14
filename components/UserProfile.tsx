@@ -70,6 +70,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
         apps: (data.apps as string[]) ?? [],
         aiLevel: (data.ai_level as string) ?? "",
         email: data.email as string | undefined,
+        saveHistory: data.save_history !== undefined ? (data.save_history as boolean) : true,
       };
       setP(updated);
       onSave(updated);
@@ -90,6 +91,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
       ai_preferred: profile.aiPreferred,
       apps: profile.apps,
       ai_level: profile.aiLevel,
+      save_history: profile.saveHistory ?? true,
       updated_at: new Date().toISOString(),
     });
   };
@@ -420,6 +422,35 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
               })}
             </div>
           </Field>
+
+          {/* Section: Prompt history */}
+          <SectionHeader icon="📂" text={lang === "pl" ? "Historia promptów" : "Prompt history"} />
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{
+              display: "flex", alignItems: "flex-start", gap: 10,
+              cursor: "pointer", padding: "10px 12px",
+              background: "var(--c-count-bg)", borderRadius: 10,
+              border: "1px solid var(--c-card-border)",
+            }}>
+              <input
+                type="checkbox"
+                checked={p.saveHistory ?? true}
+                onChange={e => setP({ ...p, saveHistory: e.target.checked })}
+                style={{ width: 16, height: 16, accentColor: "#FF6E40", marginTop: 1, flexShrink: 0 }}
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text1)", marginBottom: 2 }}>
+                  {lang === "pl" ? "Zapisuj moją historię" : "Save my history"}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--c-text3)", lineHeight: 1.5 }}>
+                  {lang === "pl"
+                    ? "Twoje wypolerowane prompty będą dostępne w zakładce Historia. Możesz wyłączyć w dowolnym momencie."
+                    : "Your polished prompts will be available in the History tab. You can disable this anytime."}
+                </div>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Footer */}
