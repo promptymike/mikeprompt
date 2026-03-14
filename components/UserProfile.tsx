@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { type Profile, EMPTY_PROFILE, saveProfile as persistProfile } from "@/lib/profile";
-import { signInWithEmail, signOut, getCurrentUser } from "@/lib/auth";
+import { signUp, signIn, signOut, resetPassword, getCurrentUser } from "@/lib/auth";
 import { supabase, hasSupabase } from "@/lib/supabase";
 
 export type { Profile };
@@ -102,7 +102,6 @@ const T = {
   },
 };
 
-type AuthStep = "idle" | "sent" | "loading";
 type SupabaseUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
 interface UserProfileProps {
@@ -116,9 +115,13 @@ interface UserProfileProps {
 export default function UserProfile({ open, onClose, onSave, initialProfile, lang = "en" }: UserProfileProps) {
   const [p, setP] = useState<Profile>(initialProfile);
   const [saved, setSaved] = useState(false);
-  const [authStep, setAuthStep] = useState<AuthStep>("idle");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("login");
   const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
   const [currentUser, setCurrentUser] = useState<SupabaseUser>(null);
   const t = T[lang];
 
@@ -199,22 +202,45 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
     setP(updated);
     onSave(updated);
     persistProfile(updated);
-    setAuthStep("idle");
+    setAuthMode("login");
     setAuthEmail("");
+    setAuthPassword("");
     setAuthError("");
+    setAuthSuccess("");
   };
 
-  const handleSendMagicLink = async () => {
-    if (!authEmail.includes("@")) return setAuthError("Invalid email");
-    setAuthStep("loading");
+  const handleAuth = async () => {
+    setAuthLoading(true);
     setAuthError("");
-    const { error } = await signInWithEmail(authEmail);
-    if (error) {
-      setAuthError(t.cloud_error_send);
-      setAuthStep("idle");
-    } else {
-      setAuthStep("sent");
+    setAuthSuccess("");
+
+    if (authMode === "reset") {
+      const { error } = await resetPassword(authEmail);
+      if (error) setAuthError(error.message);
+      else setAuthSuccess(lang === "pl" ? "Sprawdź email — wysłaliśmy link do resetowania hasła" : "Check your email — we sent a reset link");
+      setAuthLoading(false);
+      return;
     }
+
+    if (authMode === "register") {
+      if (authPassword.length < 8) {
+        setAuthError(lang === "pl" ? "Hasło musi mieć min. 8 znaków" : "Password must be at least 8 characters");
+        setAuthLoading(false);
+        return;
+      }
+      const { error } = await signUp(authEmail, authPassword, authName);
+      if (error) setAuthError(error.message);
+      else setAuthSuccess(lang === "pl" ? "✅ Sprawdź email i kliknij link potwierdzający!" : "✅ Check your email and click the confirmation link!");
+      setAuthLoading(false);
+      return;
+    }
+
+    // Login
+    const { error } = await signIn(authEmail, authPassword);
+    if (error) {
+      setAuthError(lang === "pl" ? "Nieprawidłowy email lub hasło" : "Invalid email or password");
+    }
+    setAuthLoading(false);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -305,68 +331,117 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
           {/* Cloud login section */}
           {!currentUser ? (
             <div style={{
-              background: "rgba(255,110,64,0.06)",
-              border: "1px solid rgba(255,110,64,0.2)",
-              borderRadius: 12, padding: "14px 16px", marginBottom: 16,
+              background: "rgba(255,110,64,0.04)",
+              border: "1px solid rgba(255,110,64,0.18)",
+              borderRadius: 14,
+              padding: "16px",
+              marginBottom: 16,
             }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text1)", marginBottom: 4 }}>
-                {t.cloud_title}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--c-text3)", marginBottom: 12 }}>
-                {t.cloud_sub}
-              </div>
-
-              {authStep === "idle" && (
-                <div style={{ display: "flex", gap: 6 }}>
-                  <input
-                    type="email"
-                    value={authEmail}
-                    onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder={t.cloud_email_placeholder}
-                    style={{ ...inputStyle, flex: 1, fontSize: 12 }}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMagicLink()}
-                    onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
-                  />
+              {/* Header z przełącznikiem Login/Zarejestruj */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+                {(["login", "register"] as const).map(mode => (
                   <button
-                    onClick={handleSendMagicLink}
-                    disabled={!authEmail.includes("@")}
+                    key={mode}
+                    onClick={() => { setAuthMode(mode); setAuthError(""); setAuthSuccess(""); }}
                     style={{
-                      padding: "8px 12px", borderRadius: 10, border: "none",
-                      background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                      color: "white", fontSize: 12, fontWeight: 600,
-                      cursor: authEmail.includes("@") ? "pointer" : "default",
-                      opacity: authEmail.includes("@") ? 1 : 0.5,
-                      whiteSpace: "nowrap",
+                      flex: 1, padding: "6px", borderRadius: 8, border: "none",
+                      background: authMode === mode ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-card)",
+                      color: authMode === mode ? "white" : "var(--c-text3)",
+                      fontSize: 12, fontWeight: 600, cursor: "pointer",
                     }}
                   >
-                    {t.cloud_send_code}
+                    {mode === "login"
+                      ? (lang === "pl" ? "Zaloguj się" : "Sign in")
+                      : (lang === "pl" ? "Zarejestruj się" : "Sign up")}
                   </button>
-                </div>
+                ))}
+              </div>
+
+              {/* Imię — tylko przy rejestracji */}
+              {authMode === "register" && (
+                <input
+                  type="text"
+                  value={authName}
+                  onChange={e => setAuthName(e.target.value)}
+                  placeholder={lang === "pl" ? "Imię (opcjonalnie)" : "Name (optional)"}
+                  style={{ ...inputStyle, marginBottom: 8, fontSize: 13 }}
+                />
               )}
 
-              {authStep === "loading" && (
-                <div style={{ fontSize: 12, color: "var(--c-text3)" }}>{t.cloud_sending}</div>
+              {/* Email */}
+              <input
+                type="email"
+                value={authEmail}
+                onChange={e => setAuthEmail(e.target.value)}
+                placeholder="email@example.com"
+                style={{ ...inputStyle, marginBottom: 8, fontSize: 13 }}
+              />
+
+              {/* Hasło — login i register */}
+              {authMode !== "reset" && (
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  placeholder={lang === "pl" ? "Hasło (min. 8 znaków)" : "Password (min. 8 chars)"}
+                  onKeyDown={e => e.key === "Enter" && handleAuth()}
+                  style={{ ...inputStyle, marginBottom: 10, fontSize: 13 }}
+                />
               )}
 
-              {authStep === "sent" && (
-                <div style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>
-                  ✅ {lang === "pl"
-                    ? `Sprawdź email ${authEmail} — kliknij link aby się zalogować`
-                    : `Check ${authEmail} — click the link to sign in`}
-                </div>
+              {/* Error / Success */}
+              {authError && <div style={{ fontSize: 12, color: "#E53935", marginBottom: 8 }}>{authError}</div>}
+              {authSuccess && <div style={{ fontSize: 12, color: "#43A047", marginBottom: 8 }}>{authSuccess}</div>}
+
+              {/* Główny przycisk */}
+              {authMode !== "reset" && (
+                <button
+                  onClick={handleAuth}
+                  disabled={authLoading}
+                  style={{
+                    width: "100%", padding: "10px", borderRadius: 10, border: "none",
+                    background: authLoading ? "#FFAB91" : "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                    color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 8,
+                  }}
+                >
+                  {authLoading ? "⏳..." : authMode === "login"
+                    ? (lang === "pl" ? "Zaloguj się" : "Sign in")
+                    : (lang === "pl" ? "Stwórz konto" : "Create account")}
+                </button>
               )}
 
-              {authError && (
-                <div style={{ fontSize: 11, color: "#E53935", marginTop: 6 }}>{authError}</div>
+              {/* Zapomniałem hasła */}
+              {authMode === "login" && (
+                <button
+                  onClick={() => { setAuthMode("reset"); setAuthError(""); }}
+                  style={{ background: "none", border: "none", fontSize: 11, color: "var(--c-text4)", cursor: "pointer", textDecoration: "underline" }}
+                >
+                  {lang === "pl" ? "Zapomniałem hasła" : "Forgot password?"}
+                </button>
+              )}
+
+              {/* Reset password view */}
+              {authMode === "reset" && (
+                <>
+                  <button
+                    onClick={handleAuth}
+                    disabled={authLoading}
+                    style={{ width: "100%", padding: "10px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #FF6E40, #FF8A65)", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}
+                  >
+                    {authLoading ? "⏳..." : (lang === "pl" ? "Wyślij link resetujący" : "Send reset link")}
+                  </button>
+                  <button onClick={() => setAuthMode("login")} style={{ background: "none", border: "none", fontSize: 11, color: "var(--c-text4)", cursor: "pointer", textDecoration: "underline" }}>
+                    {lang === "pl" ? "← Wróć do logowania" : "← Back to login"}
+                  </button>
+                </>
               )}
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: "rgba(67,160,71,0.06)", borderRadius: 10 }}>
               <span style={{ fontSize: 14 }}>✅</span>
-              <span style={{ fontSize: 12, color: "#43A047", fontWeight: 500, flex: 1 }}>{currentUser.email}</span>
-              <button onClick={handleLogout} style={{ fontSize: 11, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
-                {t.cloud_sign_out}
+              <span style={{ fontSize: 12, color: "#43A047", fontWeight: 500, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser.email}</span>
+              <button onClick={handleLogout} style={{ fontSize: 11, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", flexShrink: 0 }}>
+                {lang === "pl" ? "wyloguj" : "sign out"}
               </button>
             </div>
           )}
