@@ -412,10 +412,11 @@ const MikePromptMVP = () => {
         transform: visible ? "translateY(0)" : "translateY(-20px)",
         transition: "all 0.8s ease",
         maxWidth: 1200, margin: "0 auto",
-        flexWrap: "wrap", gap: 10,
+        flexWrap: "nowrap", gap: 10,
+        overflowX: "auto", WebkitOverflowScrolling: "touch",
       }}>
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <div style={{
             width: 40, height: 40, borderRadius: 12,
             background: "linear-gradient(135deg, #FF8A65, #FF6E40)",
@@ -438,7 +439,7 @@ const MikePromptMVP = () => {
         <div style={{
           display: "flex", gap: 4,
           background: "var(--c-tab-bar)", borderRadius: 10, padding: 4,
-          flexWrap: "wrap",
+          flexWrap: "nowrap", flexShrink: 0,
         }}>
           {TABS.map(([tab, label]) => (
             <button
@@ -460,7 +461,7 @@ const MikePromptMVP = () => {
         </div>
 
         {/* Right: counter + polishes + dark + lang + profile */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: "auto", flexWrap: "nowrap" }}>
           {dailyCount > 0 && (
             <div style={{
               fontSize: 13, color: "#FF6E40", fontWeight: 600,
