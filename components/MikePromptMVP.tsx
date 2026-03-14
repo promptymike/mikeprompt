@@ -7,6 +7,7 @@ import About from "./About";
 import UserProfile, { type Profile, EMPTY_PROFILE } from "./UserProfile";
 import ModelComparison from "./ModelComparison";
 import SavedPrompts from "./SavedPrompts";
+import AnonymizeTool from "./AnonymizeTool";
 import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
 import { supabase, hasSupabase } from "@/lib/supabase";
 
@@ -16,6 +17,7 @@ const T = {
   en: {
     tagline: "AI for humans",
     tab_polish: "✨ Polish",
+    tab_anonymize: "🔒 Anonymize",
     tab_library: "📚 Library",
     tab_usecases: "💡 Use Cases",
     tab_models: "🧠 Models",
@@ -71,6 +73,7 @@ const T = {
   pl: {
     tagline: "AI dla ludzi",
     tab_polish: "✨ Poleruj",
+    tab_anonymize: "🔒 Anonimizuj",
     tab_library: "📚 Biblioteka",
     tab_usecases: "💡 Zastosowania",
     tab_models: "🧠 Modele",
@@ -379,7 +382,7 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases" | "models" | "history" | "about">("polish");
+  const [activeTab, setActiveTab] = useState<"polish" | "anonymize" | "library" | "usecases" | "models" | "history" | "about">("polish");
   const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
@@ -388,6 +391,8 @@ const MikePromptMVP = () => {
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [authToast, setAuthToast] = useState<"success" | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [anonymize, setAnonymize] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -439,6 +444,13 @@ const MikePromptMVP = () => {
       const timer = setTimeout(() => setShowOnboarding(true), 1500);
       return () => clearTimeout(timer);
     }
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   const toggleLang = () => {
@@ -569,6 +581,7 @@ const MikePromptMVP = () => {
 
   const TABS = [
     ["polish", t.tab_polish],
+    ["anonymize", t.tab_anonymize],
     ["library", t.tab_library],
     ["usecases", t.tab_usecases],
     ["models", t.tab_models],
@@ -618,7 +631,7 @@ const MikePromptMVP = () => {
         {/* Top row: Logo | Utility buttons */}
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "12px 24px 8px",
+          padding: isMobile ? "12px 16px 8px" : "12px 24px 8px",
           maxWidth: 1200, margin: "0 auto",
         }}>
           {/* Logo — clickable, goes to Polish tab */}
@@ -644,15 +657,17 @@ const MikePromptMVP = () => {
           </button>
 
           {/* Right: utility buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {dailyCount > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 6, flexShrink: 0 }}>
+            {!isMobile && dailyCount > 0 && (
               <div style={{ fontSize: 12, color: "#FF6E40", fontWeight: 600, background: "var(--c-badge)", borderRadius: 100, padding: "3px 10px", whiteSpace: "nowrap" }}>
                 🔥 {dailyCount}
               </div>
             )}
-            <div style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 500, whiteSpace: "nowrap" }}>
-              {MAX_FREE - usageCount > 0 ? `${MAX_FREE - usageCount} ${t.free_left}` : t.sign_up_more}
-            </div>
+            {!isMobile && (
+              <div style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 500, whiteSpace: "nowrap" }}>
+                {MAX_FREE - usageCount > 0 ? `${MAX_FREE - usageCount} ${t.free_left}` : t.sign_up_more}
+              </div>
+            )}
             <button onClick={toggleDark} style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
               {dark ? "☀️" : "🌙"}
             </button>
@@ -687,25 +702,28 @@ const MikePromptMVP = () => {
           </div>
         </div>
 
-        {/* Bottom row: Tabs — centered */}
+        {/* Bottom row: Tabs */}
         <div style={{
-          padding: "0 24px 10px",
-          display: "flex", justifyContent: "center",
-          overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none",
+          padding: isMobile ? "0 12px 10px" : "0 24px 10px",
+          overflowX: "auto", scrollbarWidth: "none",
         }}>
           <div style={{
             display: "flex", gap: 2,
             background: "var(--c-tab-bar)", borderRadius: 10, padding: 3,
+            width: isMobile ? "max-content" : "fit-content",
+            margin: isMobile ? "0" : "0 auto",
           }}>
             {TABS.map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 style={{
-                  padding: "6px 14px", borderRadius: 7, border: "none",
+                  padding: isMobile ? "5px 10px" : "6px 14px",
+                  fontSize: isMobile ? 12 : 13,
+                  borderRadius: 7, border: "none",
                   background: activeTab === tab ? "var(--c-tab-active)" : "transparent",
                   color: activeTab === tab ? "var(--c-tab-active-text)" : "var(--c-tab-inactive-text)",
-                  fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
+                  fontWeight: activeTab === tab ? 600 : 400,
                   cursor: "pointer",
                   boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
                   transition: "all 0.18s", whiteSpace: "nowrap", flexShrink: 0,
@@ -723,18 +741,24 @@ const MikePromptMVP = () => {
         onSave={saveProfile}
         initialProfile={profile}
         lang={lang}
+        isMobile={isMobile}
       />
 
       {/* Onboarding toast */}
       {showOnboarding && (
         <div style={{
-          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          position: "fixed",
+          bottom: isMobile ? 16 : 24,
+          left: isMobile ? 12 : "50%",
+          right: isMobile ? 12 : "auto",
+          transform: isMobile ? "none" : "translateX(-50%)",
           background: "var(--c-card)", borderRadius: 16,
           border: "1px solid rgba(255,110,64,0.2)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
           padding: "16px 20px", zIndex: 200,
           display: "flex", alignItems: "center", gap: 14,
-          maxWidth: 420, width: "calc(100% - 48px)",
+          maxWidth: isMobile ? "none" : 420,
+          width: isMobile ? "auto" : "calc(100% - 48px)",
           animation: "slideUp 0.4s ease",
         }}>
           <div style={{ fontSize: 32 }}>🎯</div>
@@ -777,13 +801,18 @@ const MikePromptMVP = () => {
       {/* Auth success toast */}
       {authToast === "success" && (
         <div style={{
-          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          position: "fixed",
+          bottom: isMobile ? 16 : 24,
+          left: isMobile ? 12 : "50%",
+          right: isMobile ? 12 : "auto",
+          transform: isMobile ? "none" : "translateX(-50%)",
           background: "linear-gradient(135deg, #2E7D32, #388E3C)",
           borderRadius: 16,
           boxShadow: "0 8px 32px rgba(46,125,50,0.3)",
           padding: "14px 20px", zIndex: 201,
           display: "flex", alignItems: "center", gap: 12,
-          maxWidth: 400, width: "calc(100% - 48px)",
+          maxWidth: isMobile ? "none" : 400,
+          width: isMobile ? "auto" : "calc(100% - 48px)",
           animation: "slideUp 0.4s ease",
           color: "white",
         }}>
@@ -796,11 +825,14 @@ const MikePromptMVP = () => {
 
       {/* Main */}
       <main style={{
-        maxWidth: 800, margin: "0 auto", padding: "20px 24px 60px",
+        maxWidth: 800, margin: "0 auto", padding: isMobile ? "16px 16px 60px" : "20px 24px 60px",
         position: "relative", zIndex: 5,
       }}>
         {/* About tab */}
         {activeTab === "about" && <About lang={lang} />}
+
+        {/* Anonymize tab */}
+        {activeTab === "anonymize" && <AnonymizeTool lang={lang} />}
 
         {/* History tab */}
         {activeTab === "history" && (
@@ -813,7 +845,7 @@ const MikePromptMVP = () => {
               setInput(prompt); setActiveTab("polish");
               setShowResults(false); setOptimized(""); setFixes([]);
             }}
-            onNavigate={(tab) => setActiveTab(tab as "polish" | "library" | "usecases" | "models" | "history" | "about")}
+            onNavigate={(tab) => setActiveTab(tab as "polish" | "anonymize" | "library" | "usecases" | "models" | "history" | "about")}
           />
         )}
 
@@ -853,7 +885,7 @@ const MikePromptMVP = () => {
           }}>
             <h1 style={{
               fontFamily: "'Fraunces', serif",
-              fontSize: "clamp(34px, 6vw, 56px)",
+              fontSize: isMobile ? "clamp(28px, 8vw, 40px)" : "clamp(34px, 6vw, 56px)",
               fontWeight: 700, lineHeight: 1.1, marginBottom: 16, letterSpacing: "-1.5px",
               color: "var(--c-text1)",
             }}>
@@ -883,10 +915,10 @@ const MikePromptMVP = () => {
                   key={chip.prompt}
                   onClick={() => { setInput(chip.prompt); setShowResults(false); setOptimized(""); setFixes([]); }}
                   style={{
-                    padding: "7px 14px", borderRadius: 100,
+                    padding: isMobile ? "5px 10px" : "7px 14px", borderRadius: 100,
                     border: "1px solid var(--c-chip-border)",
                     background: "var(--c-chip-bg)",
-                    fontSize: 13, color: "var(--c-chip-color)", cursor: "pointer",
+                    fontSize: isMobile ? 12 : 13, color: "var(--c-chip-color)", cursor: "pointer",
                     transition: "all 0.18s",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                   }}
@@ -917,7 +949,7 @@ const MikePromptMVP = () => {
             transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "all 0.8s ease 0.5s",
           }}>
-            <div style={{ padding: "24px 24px 0" }}>
+            <div style={{ padding: isMobile ? "16px 16px 0" : "24px 24px 0" }}>
               <textarea
                 value={input}
                 onChange={(e) => { setInput(e.target.value); setShowResults(false); }}
@@ -1005,18 +1037,41 @@ const MikePromptMVP = () => {
 
             {/* Action bar */}
             <div style={{
-              padding: "14px 24px", borderTop: "1px solid var(--c-sep)",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              flexWrap: "wrap", gap: 12,
+              padding: isMobile ? "12px 16px" : "14px 24px", borderTop: "1px solid var(--c-sep)",
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              justifyContent: "space-between", alignItems: isMobile ? "stretch" : "center",
+              gap: isMobile ? 10 : 12,
             }}>
-              <div style={{ fontSize: 13, color: "var(--c-text4)" }}>
-                {input.length > 0 ? t.chars_hint(input.length) : t.paste_hint}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ fontSize: 13, color: "var(--c-text4)" }}>
+                  {input.length > 0 ? t.chars_hint(input.length) : t.paste_hint}
+                </div>
+                {/* Anonymize checkbox */}
+                <label style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  fontSize: 12, color: "var(--c-text3)", cursor: "pointer",
+                  userSelect: "none",
+                  padding: "4px 8px", borderRadius: 8,
+                  background: anonymize ? "rgba(255,110,64,0.06)" : "transparent",
+                  border: `1px solid ${anonymize ? "rgba(255,110,64,0.2)" : "transparent"}`,
+                  transition: "all 0.15s",
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={anonymize}
+                    onChange={e => setAnonymize(e.target.checked)}
+                    style={{ width: 14, height: 14, accentColor: "#FF6E40", cursor: "pointer" }}
+                  />
+                  🔒 {lang === "pl" ? "Anonimizuj" : "Anonymize"}
+                </label>
               </div>
               <button
                 onClick={optimizePrompt}
                 disabled={loading || !input.trim()}
                 style={{
-                  padding: "11px 26px", borderRadius: 12, border: "none",
+                  width: isMobile ? "100%" : "auto",
+                  padding: isMobile ? "13px" : "11px 26px", borderRadius: 12, border: "none",
                   background: loading
                     ? "linear-gradient(135deg, #FFAB91, #FFCCBC)"
                     : input.trim()
@@ -1027,7 +1082,7 @@ const MikePromptMVP = () => {
                   cursor: input.trim() ? "pointer" : "default",
                   boxShadow: input.trim() ? "0 4px 16px rgba(255,110,64,0.3)" : "none",
                   transition: "all 0.3s",
-                  display: "flex", alignItems: "center", gap: 8,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
               >
                 {loading ? (

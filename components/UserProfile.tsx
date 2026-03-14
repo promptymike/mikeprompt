@@ -27,9 +27,10 @@ interface UserProfileProps {
   onSave: (profile: Profile) => void;
   initialProfile: Profile;
   lang?: Lang;
+  isMobile?: boolean;
 }
 
-export default function UserProfile({ open, onClose, onSave, initialProfile, lang = "en" }: UserProfileProps) {
+export default function UserProfile({ open, onClose, onSave, initialProfile, lang = "en", isMobile = false }: UserProfileProps) {
   const [p, setP] = useState<Profile>(initialProfile);
   const [saved, setSaved] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register" | "reset">("login");
@@ -214,7 +215,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
         data-theme-inherit
         style={{
           position: "fixed", top: 0, right: 0,
-          width: 340, height: "100vh",
+          width: isMobile ? "100vw" : 340, height: "100vh",
           background: "var(--c-sidebar)",
           borderLeft: "1px solid var(--c-card-border)",
           zIndex: 101,
