@@ -1377,12 +1377,27 @@ const MikePromptMVP = () => {
             </div>
           )}
 
-          {/* Footer */}
-          <footer style={{ marginTop: 60, paddingBottom: 24, textAlign: "center", fontSize: 13, color: "var(--c-text4)" }}>
-            {t.footer}
-            <a href="mailto:hello@mikeprompt.com" style={{ color: "var(--c-text4)", textDecoration: "none" }}>hello@mikeprompt.com</a>
-          </footer>
         </>)}
+
+        {/* Footer — visible on all tabs */}
+        <footer style={{ marginTop: 60, paddingBottom: 24, textAlign: "center", fontSize: 13, color: "var(--c-text4)" }}>
+          {t.footer}
+          <a href="mailto:hello@mikeprompt.com" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+            hello@mikeprompt.com
+          </a>
+          <span style={{ margin: "0 8px" }}>·</span>
+          <a href="/privacy" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+            {lang === "pl" ? "Prywatność" : "Privacy"}
+          </a>
+          <span style={{ margin: "0 8px" }}>·</span>
+          <a href="/terms" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+            {lang === "pl" ? "Regulamin" : "Terms"}
+          </a>
+          <span style={{ margin: "0 8px" }}>·</span>
+          <a href="/security" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+            {lang === "pl" ? "Bezpieczeństwo" : "Security"}
+          </a>
+        </footer>
       </main>
 
       <style>{`
