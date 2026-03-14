@@ -24,7 +24,13 @@ const T = {
     creds_note: "These represent our team's professional background, not partnerships or endorsements.",
     promise_label: "Our promise",
     promise: "Your data is yours.",
-    promise_body: " We don't store your prompts. We don't train models on your input. Mike runs on Claude by Anthropic — the same AI trusted by enterprises worldwide. We charge only to keep the lights on, not to get rich off your data.",
+    promise_body: " By default we save your prompt history so you can access it anytime. You can disable this anytime in your profile settings. We never train models on your input. Mike runs on Claude by Anthropic — the same AI trusted by enterprises worldwide. We charge only to keep the lights on, not to get rich off your data.",
+    privacy_label: "What we collect",
+    privacy_items: [
+      { icon: "📧", title: "Account email", body: "Used only for login and confirmation. Never shared." },
+      { icon: "📝", title: "Prompt content", body: "By default we save your polished prompts so you can access your history. You can disable this in profile settings — then we store nothing." },
+      { icon: "🚫", title: "What we never do", body: "We never train AI models on your data. We never sell your data. We never share it with third parties." },
+    ],
     for_all_label: "For everyone",
     for_all: "MikePrompt is for every professional who uses AI at work — finance, sales, admin, accounting, management, HR, students. We believe AI should make humans better, not replace them. Every feature we build answers one question:",
     for_all_strong: " does this help someone do their best work?",
@@ -51,7 +57,13 @@ const T = {
     creds_note: "To odzwierciedla zawodowe doświadczenie naszego zespołu, nie partnerstwa ani rekomendacje.",
     promise_label: "Nasza obietnica",
     promise: "Twoje dane są twoje.",
-    promise_body: " Nie przechowujemy twoich promptów. Nie trenujemy modeli na twoich danych. Mike działa na Claude od Anthropic — tym samym AI zaufanym przez firmy na całym świecie. Pobieramy opłaty tylko po to, żeby działać, nie żeby bogacić się na twoich danych.",
+    promise_body: " Domyślnie zapisujemy Twoją historię promptów — masz do niej dostęp zawsze. Możesz to wyłączyć w ustawieniach profilu. Nigdy nie trenujemy modeli na Twoich danych. Mike działa na Claude od Anthropic — tym samym AI zaufanym przez firmy na całym świecie. Pobieramy opłaty tylko po to, żeby działać, nie żeby bogacić się na Twoich danych.",
+    privacy_label: "Co zbieramy",
+    privacy_items: [
+      { icon: "📧", title: "Email konta", body: "Używany wyłącznie do logowania i potwierdzenia. Nigdy nikomu nieudostępniany." },
+      { icon: "📝", title: "Treść promptów", body: "Domyślnie zapisujemy Twoje wypolerowane prompty, abyś miał dostęp do historii. Możesz wyłączyć tę opcję w ustawieniach profilu — wtedy nie zapisujemy żadnych treści." },
+      { icon: "🚫", title: "Czego nigdy nie robimy", body: "Nigdy nie trenujemy modeli AI na Twoich danych. Nigdy nie sprzedajemy danych. Nigdy nie udostępniamy ich stronom trzecim." },
+    ],
     for_all_label: "Dla każdego",
     for_all: "MikePrompt jest dla każdego profesjonalisty, który używa AI w pracy — finanse, sprzedaż, administracja, księgowość, zarządzanie, HR, studenci. Wierzymy, że AI powinno czynić ludzi lepszymi, nie zastępować ich. Każda funkcja, którą budujemy, odpowiada na jedno pytanie:",
     for_all_strong: " czy to pomaga komuś wykonywać swoją najlepszą pracę?",
@@ -165,6 +177,28 @@ export default function About({ lang = "en" }: { lang?: Lang }) {
         <p style={{ fontSize: 15, color: "var(--c-text2)", lineHeight: 1.78, margin: 0 }}>
           🔒 <strong style={{ color: "var(--c-text1)" }}>{t.promise}</strong>{t.promise_body}
         </p>
+      </div>
+
+      {/* What we collect */}
+      <div style={{
+        background: "var(--c-card)", borderRadius: 18,
+        border: "1px solid var(--c-card-border)",
+        padding: "22px 30px", marginBottom: 20,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 16 }}>
+          {t.privacy_label}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {t.privacy_items.map(item => (
+            <div key={item.title} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text1)", marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontSize: 13, color: "var(--c-text3)", lineHeight: 1.6 }}>{item.body}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* For everyone */}

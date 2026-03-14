@@ -37,7 +37,7 @@ const T = {
     placeholder: "Type or paste your prompt here…",
     optimize_for: "Optimize for:",
     output_for: "Output for:",
-    trust_badge: "🔒 Your prompts are not stored · Powered by Claude · Works with every AI",
+    trust_badge: "",
     chars_hint: (n: number) => `${n} chars`,
     paste_hint: "Paste anything — Mike handles the rest",
     polish_btn: "🔧 Polish it",
@@ -93,7 +93,7 @@ const T = {
     placeholder: "Wpisz lub wklej swój prompt tutaj…",
     optimize_for: "Optymalizuj dla:",
     output_for: "Wynik dla:",
-    trust_badge: "🔒 Twoje prompty nie są przechowywane · Powered by Claude · Działa z każdym AI",
+    trust_badge: "",
     chars_hint: (n: number) => `${n} znaków`,
     paste_hint: "Wklej cokolwiek — Mike zajmie się resztą",
     polish_btn: "🔧 Wypoleruj",
@@ -579,6 +579,14 @@ const MikePromptMVP = () => {
       ? "Complete your profile — Mike will be more effective!"
       : `Profile: ${profileCompletion * 25}% complete`;
 
+  const trustBadge = profile.saveHistory !== false
+    ? (lang === "pl"
+        ? "🔒 Prompty zapisywane w Twojej historii · Powered by Claude · Działa z każdym AI"
+        : "🔒 Prompts saved to your history · Powered by Claude · Works with every AI")
+    : (lang === "pl"
+        ? "🔒 Prompty nie są zapisywane · Powered by Claude · Działa z każdym AI"
+        : "🔒 Prompts not stored · Powered by Claude · Works with every AI");
+
   const TABS = [
     ["polish", t.tab_polish],
     ["anonymize", t.tab_anonymize],
@@ -1031,7 +1039,7 @@ const MikePromptMVP = () => {
                 </div>
               </div>
               <p style={{ fontSize: 12, color: "var(--c-text4)", textAlign: "center", marginTop: 2 }}>
-                {t.trust_badge}
+                {trustBadge}
               </p>
             </div>
 

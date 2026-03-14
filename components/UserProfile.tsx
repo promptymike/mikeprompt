@@ -441,13 +441,17 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                 style={{ width: 16, height: 16, accentColor: "#FF6E40", marginTop: 1, flexShrink: 0 }}
               />
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text1)", marginBottom: 2 }}>
-                  {lang === "pl" ? "Zapisuj moją historię" : "Save my history"}
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text1)", marginBottom: 4 }}>
+                  {lang === "pl" ? "Zapisuj moją historię promptów" : "Save my prompt history"}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--c-text3)", lineHeight: 1.5 }}>
-                  {lang === "pl"
-                    ? "Twoje wypolerowane prompty będą dostępne w zakładce Historia. Możesz wyłączyć w dowolnym momencie."
-                    : "Your polished prompts will be available in the History tab. You can disable this anytime."}
+                <div style={{ fontSize: 11, color: "var(--c-text3)", lineHeight: 1.6 }}>
+                  {p.saveHistory ?? true
+                    ? (lang === "pl"
+                        ? "✅ Włączone: Twoje prompty są zapisywane — masz do nich dostęp w zakładce Historia."
+                        : "✅ Enabled: Your prompts are saved — access them anytime in the History tab.")
+                    : (lang === "pl"
+                        ? "⛔ Wyłączone: Prompty nie są zapisywane nigdzie po zakończeniu sesji."
+                        : "⛔ Disabled: Prompts are not saved after your session ends.")}
                 </div>
               </div>
             </label>
