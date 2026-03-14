@@ -263,9 +263,6 @@ export default function UseCases({ lang, onTryNow }: UseCasesProps) {
   const [activeCatEn, setActiveCatEn] = useState(ALL_CATEGORY_EN);
 
   const categories = lang === "pl" ? CATEGORIES_PL : CATEGORIES_EN;
-  const activeCatDisplay = lang === "pl"
-    ? CATEGORIES_PL[CATEGORIES_EN.indexOf(activeCatEn)]
-    : activeCatEn;
 
   const filtered = activeCatEn === ALL_CATEGORY_EN
     ? USE_CASES
