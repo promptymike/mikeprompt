@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { type Profile, EMPTY_PROFILE, saveProfile as persistProfile } from "@/lib/profile";
+import { signInWithEmail, signOut, getCurrentUser } from "@/lib/auth";
+import { supabase, hasSupabase } from "@/lib/supabase";
 
 export type { Profile };
 export { EMPTY_PROFILE };
@@ -100,7 +102,8 @@ const T = {
   },
 };
 
-type AuthStep = "idle" | "code_sent" | "verified";
+type AuthStep = "idle" | "sent" | "loading";
+type SupabaseUser = Awaited<ReturnType<typeof getCurrentUser>>;
 
 interface UserProfileProps {
   open: boolean;
@@ -115,13 +118,62 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
   const [saved, setSaved] = useState(false);
   const [authStep, setAuthStep] = useState<AuthStep>("idle");
   const [authEmail, setAuthEmail] = useState("");
-  const [authCode, setAuthCode] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [devToken, setDevToken] = useState("");
+  const [currentUser, setCurrentUser] = useState<SupabaseUser>(null);
   const t = T[lang];
 
   useEffect(() => { setP(initialProfile); }, [initialProfile]);
+
+  useEffect(() => {
+    if (!hasSupabase) return;
+    getCurrentUser().then((user) => { if (user) setCurrentUser(user); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+      if (session?.user) loadProfileFromDB(session.user.id);
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadProfileFromDB = async (userId: string) => {
+    if (!hasSupabase) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase.from("profiles") as any).select("*").eq("id", userId).single() as { data: Record<string, unknown> | null };
+    if (data) {
+      const updated: Profile = {
+        ...p,
+        name: (data.name as string) ?? "",
+        role: (data.role as string) ?? "",
+        industry: (data.industry as string) ?? "",
+        usage: (data.usage as string) ?? "",
+        challenge: (data.challenge as string) ?? "",
+        aiPreferred: (data.ai_preferred as string) ?? "",
+        apps: (data.apps as string[]) ?? [],
+        aiLevel: (data.ai_level as string) ?? "",
+        email: data.email as string | undefined,
+      };
+      setP(updated);
+      onSave(updated);
+    }
+  };
+
+  const saveProfileToDB = async (profile: Profile) => {
+    if (!hasSupabase || !currentUser) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("profiles") as any).upsert({
+      id: currentUser.id,
+      email: currentUser.email,
+      name: profile.name,
+      role: profile.role,
+      industry: profile.industry,
+      usage: profile.usage,
+      challenge: profile.challenge,
+      ai_preferred: profile.aiPreferred,
+      apps: profile.apps,
+      ai_level: profile.aiLevel,
+      updated_at: new Date().toISOString(),
+    });
+  };
 
   const toggleApp = (app: string) => {
     setP((prev) => ({
@@ -132,72 +184,37 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     onSave(p);
     persistProfile(p);
+    await saveProfileToDB(p);
     setSaved(true);
     setTimeout(() => setSaved(false), 2200);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
+    setCurrentUser(null);
     const updated = { ...p, email: undefined, plan: undefined, createdAt: undefined };
     setP(updated);
     onSave(updated);
     persistProfile(updated);
     setAuthStep("idle");
     setAuthEmail("");
-    setAuthCode("");
     setAuthError("");
-    setDevToken("");
   };
 
-  const handleSendCode = async () => {
-    if (!authEmail.includes("@")) return;
-    setAuthLoading(true);
+  const handleSendMagicLink = async () => {
+    if (!authEmail.includes("@")) return setAuthError("Invalid email");
+    setAuthStep("loading");
     setAuthError("");
-    try {
-      const res = await fetch("/api/auth/magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: authEmail }),
-      });
-      const data = await res.json() as { success?: boolean; devToken?: string; error?: string };
-      if (!res.ok || !data.success) throw new Error(data.error ?? "Send failed");
-      if (data.devToken) setDevToken(data.devToken);
-      setAuthStep("code_sent");
-    } catch {
+    const { error } = await signInWithEmail(authEmail);
+    if (error) {
       setAuthError(t.cloud_error_send);
+      setAuthStep("idle");
+    } else {
+      setAuthStep("sent");
     }
-    setAuthLoading(false);
-  };
-
-  const handleVerify = async () => {
-    if (authCode.length < 6) return;
-    setAuthLoading(true);
-    setAuthError("");
-    try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: authEmail, token: authCode }),
-      });
-      const data = await res.json() as { success?: boolean; user?: { email: string; plan: string; createdAt: string }; error?: string };
-      if (!res.ok || !data.success) throw new Error(data.error ?? "Verify failed");
-      const updated: Profile = {
-        ...p,
-        email: authEmail,
-        plan: (data.user?.plan ?? "free") as "free" | "pro",
-        createdAt: data.user?.createdAt,
-      };
-      setP(updated);
-      onSave(updated);
-      persistProfile(updated);
-      setAuthStep("verified");
-      setDevToken("");
-    } catch {
-      setAuthError(t.cloud_error_invalid);
-    }
-    setAuthLoading(false);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -286,7 +303,7 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 16px" }}>
           {/* Cloud login section */}
-          {!p.email ? (
+          {!currentUser ? (
             <div style={{
               background: "rgba(255,110,64,0.06)",
               border: "1px solid rgba(255,110,64,0.2)",
@@ -307,13 +324,13 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                     onChange={(e) => setAuthEmail(e.target.value)}
                     placeholder={t.cloud_email_placeholder}
                     style={{ ...inputStyle, flex: 1, fontSize: 12 }}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMagicLink()}
                     onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
                   />
                   <button
-                    onClick={handleSendCode}
-                    disabled={authLoading || !authEmail.includes("@")}
+                    onClick={handleSendMagicLink}
+                    disabled={!authEmail.includes("@")}
                     style={{
                       padding: "8px 12px", borderRadius: 10, border: "none",
                       background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
@@ -323,46 +340,20 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {authLoading ? t.cloud_sending : t.cloud_send_code}
+                    {t.cloud_send_code}
                   </button>
                 </div>
               )}
 
-              {authStep === "code_sent" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 11, color: "var(--c-text3)" }}>{t.cloud_code_hint}</div>
-                  {devToken && (
-                    <div style={{ fontSize: 11, color: "#FF6E40", fontFamily: "monospace" }}>
-                      {t.cloud_dev_hint(devToken)}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      type="text"
-                      value={authCode}
-                      onChange={(e) => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      placeholder={t.cloud_code_placeholder}
-                      maxLength={6}
-                      style={{ ...inputStyle, flex: 1, fontSize: 16, letterSpacing: "0.2em", textAlign: "center" }}
-                      onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-                      onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-                      onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
-                    />
-                    <button
-                      onClick={handleVerify}
-                      disabled={authLoading || authCode.length < 6}
-                      style={{
-                        padding: "8px 12px", borderRadius: 10, border: "none",
-                        background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                        color: "white", fontSize: 12, fontWeight: 600,
-                        cursor: authCode.length === 6 ? "pointer" : "default",
-                        opacity: authCode.length === 6 ? 1 : 0.5,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {authLoading ? t.cloud_verifying : t.cloud_verify}
-                    </button>
-                  </div>
+              {authStep === "loading" && (
+                <div style={{ fontSize: 12, color: "var(--c-text3)" }}>{t.cloud_sending}</div>
+              )}
+
+              {authStep === "sent" && (
+                <div style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>
+                  ✅ {lang === "pl"
+                    ? `Sprawdź email ${authEmail} — kliknij link aby się zalogować`
+                    : `Check ${authEmail} — click the link to sign in`}
                 </div>
               )}
 
@@ -371,17 +362,12 @@ export default function UserProfile({ open, onClose, onSave, initialProfile, lan
               )}
             </div>
           ) : (
-            <div style={{ fontSize: 12, color: "#43A047", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-              ✅ {t.cloud_logged_as} <strong>{p.email}</strong>
-              {p.plan === "pro" && (
-                <span style={{ fontSize: 10, background: "#FF6E40", color: "white", borderRadius: 100, padding: "1px 7px", fontWeight: 700 }}>PRO</span>
-              )}
-              <span
-                style={{ color: "var(--c-text4)", cursor: "pointer", marginLeft: "auto" }}
-                onClick={handleLogout}
-              >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 12px", background: "rgba(67,160,71,0.06)", borderRadius: 10 }}>
+              <span style={{ fontSize: 14 }}>✅</span>
+              <span style={{ fontSize: 12, color: "#43A047", fontWeight: 500, flex: 1 }}>{currentUser.email}</span>
+              <button onClick={handleLogout} style={{ fontSize: 11, color: "var(--c-text4)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
                 {t.cloud_sign_out}
-              </span>
+              </button>
             </div>
           )}
 
