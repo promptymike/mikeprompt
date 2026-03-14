@@ -191,6 +191,10 @@ const incrementStoredCount = () => {
 };
 
 const CSS_VARS = `
+/* Hide scrollbar on tab row */
+header div[style*="overflowX"] { scrollbar-width: none; }
+header div[style*="overflowX"]::-webkit-scrollbar { display: none; }
+
 [data-theme="light"] {
   --c-page-bg: linear-gradient(165deg, #FFF8F0 0%, #FFF1E6 30%, #FFE8D6 60%, #FFDDC1 100%);
   --c-card: white;
@@ -432,126 +436,95 @@ const MikePromptMVP = () => {
         }} />
       </div>
 
-      {/* Nav */}
-      <nav style={{
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "18px 24px", position: "relative", zIndex: 10,
+      {/* Nav — two-level sticky header */}
+      <header style={{
+        position: "sticky", top: 0, zIndex: 100,
+        background: "var(--c-page-bg-solid, rgba(255,248,240,0.95))",
+        backdropFilter: "blur(12px)",
+        borderBottom: "1px solid var(--c-card-border)",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(-20px)",
         transition: "all 0.8s ease",
-        maxWidth: 1200, margin: "0 auto",
-        flexWrap: "nowrap", gap: 10,
-        overflowX: "auto", WebkitOverflowScrolling: "touch",
       }}>
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: "linear-gradient(135deg, #FF8A65, #FF6E40)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, color: "white", fontWeight: 700,
-            boxShadow: "0 4px 14px rgba(255,110,64,0.25)",
-            fontFamily: "'Fraunces', serif",
-          }}>M</div>
-          <div>
-            <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: "'Fraunces', serif", color: "var(--c-text1)" }}>
-              mike<span style={{ color: "#FF6E40" }}>prompt</span>
-            </span>
-            <div style={{ fontSize: 11, color: "var(--c-text4)", fontWeight: 400, letterSpacing: "0.2px", marginTop: -2 }}>
-              {t.tagline}
-            </div>
-          </div>
-        </div>
-
-        {/* Tab switcher */}
+        {/* Top row: Logo | Utility buttons */}
         <div style={{
-          display: "flex", gap: 4,
-          background: "var(--c-tab-bar)", borderRadius: 10, padding: 4,
-          flexWrap: "nowrap", flexShrink: 0,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "12px 24px 8px",
+          maxWidth: 1200, margin: "0 auto",
         }}>
-          {TABS.map(([tab, label]) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: "6px 13px", borderRadius: 7, border: "none",
-                background: activeTab === tab ? "var(--c-tab-active)" : "transparent",
-                color: activeTab === tab ? "var(--c-tab-active-text)" : "var(--c-tab-inactive-text)",
-                fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
-                cursor: "pointer",
-                boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                transition: "all 0.18s", whiteSpace: "nowrap",
-              }}
-            >
-              {label}
+          {/* Logo — clickable, goes to Polish tab */}
+          <button
+            onClick={() => setActiveTab("polish")}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: 0 }}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "linear-gradient(135deg, #FF8A65, #FF6E40)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18, color: "white", fontWeight: 700,
+              fontFamily: "'Fraunces', serif",
+              boxShadow: "0 3px 10px rgba(255,110,64,0.25)",
+              flexShrink: 0,
+            }}>M</div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: "'Fraunces', serif", color: "var(--c-text1)" }}>
+                mike<span style={{ color: "#FF6E40" }}>prompt</span>
+              </div>
+              <div style={{ fontSize: 10, color: "var(--c-text4)", marginTop: -2 }}>{t.tagline}</div>
+            </div>
+          </button>
+
+          {/* Right: utility buttons */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {dailyCount > 0 && (
+              <div style={{ fontSize: 12, color: "#FF6E40", fontWeight: 600, background: "var(--c-badge)", borderRadius: 100, padding: "3px 10px", whiteSpace: "nowrap" }}>
+                🔥 {dailyCount}
+              </div>
+            )}
+            <div style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 500, whiteSpace: "nowrap" }}>
+              {MAX_FREE - usageCount > 0 ? `${MAX_FREE - usageCount} ${t.free_left}` : t.sign_up_more}
+            </div>
+            <button onClick={toggleDark} style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
+              {dark ? "☀️" : "🌙"}
             </button>
-          ))}
+            <button onClick={toggleLang} style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 11, fontWeight: 600, color: "var(--c-toggle-color)", cursor: "pointer", flexShrink: 0 }}>
+              {lang === "en" ? "PL" : "EN"}
+            </button>
+            <button onClick={() => setProfileOpen(true)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer", background: profileInitial ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)", color: profileInitial ? "white" : "var(--c-toggle-color)", fontSize: profileInitial ? 13 : 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", outline: "1px solid var(--c-toggle-border)", flexShrink: 0 }}>
+              {profileInitial ?? "👤"}
+            </button>
+          </div>
         </div>
 
-        {/* Right: counter + polishes + dark + lang + profile */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: "auto", flexWrap: "nowrap" }}>
-          {dailyCount > 0 && (
-            <div style={{
-              fontSize: 13, color: "#FF6E40", fontWeight: 600,
-              background: "var(--c-badge)", borderRadius: 100, padding: "4px 12px",
-            }}>
-              🔥 {dailyCount} {dailyCount !== 1 ? t.polished_today_plural : t.polished_today_single}
-            </div>
-          )}
-          <div style={{ fontSize: 13, color: "var(--c-text3)", fontWeight: 500 }}>
-            {MAX_FREE - usageCount > 0 ? `${MAX_FREE - usageCount} ${t.free_left}` : t.sign_up_more}
+        {/* Bottom row: Tabs (scroll on mobile, hidden scrollbar) */}
+        <div style={{
+          padding: "0 24px 10px",
+          maxWidth: 1200, margin: "0 auto",
+          overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none",
+        }}>
+          <div style={{
+            display: "flex", gap: 2,
+            background: "var(--c-tab-bar)", borderRadius: 10, padding: 3,
+            width: "fit-content", minWidth: "100%",
+          }}>
+            {TABS.map(([tab, label]) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: "6px 14px", borderRadius: 7, border: "none",
+                  background: activeTab === tab ? "var(--c-tab-active)" : "transparent",
+                  color: activeTab === tab ? "var(--c-tab-active-text)" : "var(--c-tab-inactive-text)",
+                  fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
+                  cursor: "pointer",
+                  boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                  transition: "all 0.18s", whiteSpace: "nowrap", flexShrink: 0,
+                }}
+              >{label}</button>
+            ))}
           </div>
-          {/* Dark mode toggle */}
-          <button
-            onClick={toggleDark}
-            title={dark ? "Switch to light mode" : "Switch to dark mode"}
-            style={{
-              padding: "4px 10px", borderRadius: 8,
-              border: "1px solid var(--c-toggle-border)",
-              background: "var(--c-toggle)", fontSize: 14, cursor: "pointer",
-              color: "var(--c-toggle-color)", transition: "all 0.15s",
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-toggle-border)"; }}
-          >
-            {dark ? "☀️" : "🌙"}
-          </button>
-          {/* Language toggle */}
-          <button
-            onClick={toggleLang}
-            style={{
-              padding: "4px 10px", borderRadius: 8,
-              border: "1px solid var(--c-toggle-border)",
-              background: "var(--c-toggle)", fontSize: 12, fontWeight: 600,
-              color: "var(--c-toggle-color)", cursor: "pointer", transition: "all 0.15s",
-              letterSpacing: "0.3px",
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-toggle-border)"; e.currentTarget.style.color = "var(--c-toggle-color)"; }}
-          >
-            {lang === "en" ? "PL" : "EN"}
-          </button>
-          {/* Profile icon */}
-          <button
-            onClick={() => setProfileOpen(true)}
-            title="Your profile"
-            style={{
-              width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
-              background: profileInitial ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)",
-              color: profileInitial ? "white" : "var(--c-toggle-color)",
-              fontSize: profileInitial ? 14 : 16, fontWeight: 700,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.2s",
-              boxShadow: profileInitial ? "0 2px 8px rgba(255,110,64,0.3)" : "none",
-              outline: "1px solid var(--c-toggle-border)",
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.transform = "scale(1.08)"; }}
-            onMouseOut={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-          >
-            {profileInitial ?? "👤"}
-          </button>
         </div>
-      </nav>
+      </header>
 
       {/* Profile sidebar */}
       <UserProfile
