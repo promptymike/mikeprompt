@@ -110,6 +110,22 @@ const T = {
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
+const TOOL_ICONS: Record<string, string> = {
+  "Claude": "🟠",
+  "ChatGPT": "🟢",
+  "Gemini": "🔵",
+  "Copilot": "🟣",
+  "Perplexity": "⚫",
+};
+
+type Recommendation = {
+  bestTool: string;
+  reason: string;
+  tip: string;
+  alternativeTool?: string;
+  alternativeReason?: string;
+};
+
 const EXAMPLE_CHIPS = {
   en: [
     { icon: "📊", label: "budget report", prompt: "write a budget report" },
@@ -278,6 +294,7 @@ const MikePromptMVP = () => {
   const [dark, setDark] = useState(false);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
@@ -334,6 +351,7 @@ const MikePromptMVP = () => {
       const result = data.result || "Something went wrong. Try again.";
       setOptimized(result);
       setFixes(Array.isArray(data.fixes) ? data.fixes : []);
+      setRecommendation(data.recommendation ?? null);
       setProTip(PRO_TIPS[Math.floor(Math.random() * PRO_TIPS.length)]);
       setFeedback(null);
       setShowResults(true);
@@ -895,6 +913,38 @@ const MikePromptMVP = () => {
                   </div>
                 </div>
               )}
+              {/* AI Recommendation */}
+              {recommendation && (
+                <div style={{ padding: "16px 24px", borderTop: "1px solid var(--c-sep)", background: "rgba(66,133,244,0.03)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text4)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {lang === "pl" ? "🤖 Mike rekomenduje" : "🤖 Mike recommends"}
+                  </div>
+                  <div style={{
+                    background: "var(--c-card)",
+                    border: "2px solid rgba(255,110,64,0.3)",
+                    borderRadius: 12, padding: "12px 16px", marginBottom: 8,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 18 }}>{TOOL_ICONS[recommendation.bestTool] ?? "🤖"}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text1)" }}>{recommendation.bestTool}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#FF6E40", background: "rgba(255,110,64,0.1)", borderRadius: 100, padding: "2px 8px" }}>
+                        {lang === "pl" ? "NAJLEPSZY WYBÓR" : "BEST CHOICE"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--c-text2)", marginBottom: 6 }}>{recommendation.reason}</div>
+                    <div style={{ fontSize: 12, color: "#FF6E40", background: "rgba(255,110,64,0.05)", borderRadius: 8, padding: "6px 10px" }}>
+                      💡 {recommendation.tip}
+                    </div>
+                  </div>
+                  {recommendation.alternativeTool && (
+                    <div style={{ fontSize: 12, color: "var(--c-text3)", padding: "6px 4px" }}>
+                      {lang === "pl" ? "Alternatywnie:" : "Alternative:"}{" "}
+                      <strong>{recommendation.alternativeTool}</strong> — {recommendation.alternativeReason}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {proTip && (
                 <div style={{ padding: "14px 24px", borderTop: "1px solid var(--c-sep)", background: "var(--c-tip-bg)" }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>

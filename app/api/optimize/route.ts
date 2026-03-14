@@ -21,7 +21,29 @@ RULES:
 - Add a one-line "📋 Format:" instruction at the end specifying desired output format
 - Be practical, not academic. Write like a smart colleague, not a textbook.
 
-Respond ONLY with valid JSON: {"optimized": "improved prompt here", "fixes": ["short description of each fix"]}. No markdown, no backticks, just raw JSON.`;
+ADDITIONALLY, after optimizing the prompt, always recommend the best AI tool for this specific task.
+
+TOOL SELECTION RULES:
+- Claude → structured documents, analysis, long-form writing, following complex instructions, confidential data (nothing stored)
+- ChatGPT → creative writing, brainstorming, code, general questions, plugins/tools
+- Gemini → research requiring current web data, Google Workspace integration, multimodal (images+text)
+- Copilot → Microsoft 365 users, Word/Excel/Teams integration, corporate environment
+- Perplexity → fact-checking, research with sources, current events
+
+If the user has selected a specific tool and it differs from your recommendation, acknowledge their choice and explain why your recommendation might be better while validating their choice.
+
+OUTPUT FORMAT — respond ONLY with valid JSON (no markdown, no backticks):
+{
+  "optimized": "improved prompt here",
+  "fixes": ["short description of each fix"],
+  "recommendation": {
+    "bestTool": "Claude",
+    "reason": "one sentence why this tool is best for this specific task",
+    "tip": "one concrete usage tip for getting the best result",
+    "alternativeTool": "ChatGPT",
+    "alternativeReason": "one sentence why this is a good alternative"
+  }
+}`;
 
 const CHAT_INSTRUCTIONS: Record<string, string> = {
   ChatGPT:
@@ -32,6 +54,8 @@ const CHAT_INSTRUCTIONS: Record<string, string> = {
     "Gemini is prone to hallucination, so add 'Only use verified information' and 'If unsure, say so'. It benefits from very specific questions.",
   Copilot:
     "Copilot is slow and has limited context, so make the prompt ultra-concise and specific. Break complex tasks into smaller chunks.",
+  Perplexity:
+    "Perplexity excels at web research. Ask it to cite sources and specify the time range of information you need.",
 };
 
 const PRODUCT_INSTRUCTIONS: Record<string, string> = {
@@ -47,8 +71,29 @@ const PRODUCT_INSTRUCTIONS: Record<string, string> = {
     "No specific output format constraints — optimize for clarity and precision.",
 };
 
+interface ParsedResponse {
+  optimized: string;
+  fixes: string[];
+  recommendation?: {
+    bestTool: string;
+    reason: string;
+    tip: string;
+    alternativeTool?: string;
+    alternativeReason?: string;
+  };
+}
+
 export async function POST(req: NextRequest) {
-  const { prompt, role, goal, name, selectedChat, selectedProduct, lang, profile } = await req.json();
+  const { prompt, role, goal, name, selectedChat, selectedProduct, lang, profile } = await req.json() as {
+    prompt: string;
+    role?: string;
+    goal?: string;
+    name?: string;
+    selectedChat?: string;
+    selectedProduct?: string;
+    lang?: string;
+    profile?: Record<string, unknown>;
+  };
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
@@ -78,13 +123,13 @@ export async function POST(req: NextRequest) {
   // User profile context (from saved profile sidebar)
   if (profile && typeof profile === "object") {
     const parts: string[] = [];
-    if (profile.name && !name) parts.push(`Name: ${profile.name}`);
-    if (profile.role && !role) parts.push(`Role: ${profile.role}`);
-    if (profile.industry) parts.push(`Industry: ${profile.industry}`);
-    if (profile.usage) parts.push(`Uses AI for: ${profile.usage}`);
-    if (profile.challenge) parts.push(`Biggest challenge: ${profile.challenge}`);
-    if (profile.aiLevel) parts.push(`AI experience level: ${profile.aiLevel}`);
-    if (Array.isArray(profile.apps) && profile.apps.length > 0) parts.push(`Works in: ${profile.apps.join(", ")}`);
+    if (typeof profile.name === "string" && profile.name && !name) parts.push(`Name: ${profile.name}`);
+    if (typeof profile.role === "string" && profile.role && !role) parts.push(`Role: ${profile.role}`);
+    if (typeof profile.industry === "string" && profile.industry) parts.push(`Industry: ${profile.industry}`);
+    if (typeof profile.usage === "string" && profile.usage) parts.push(`Uses AI for: ${profile.usage}`);
+    if (typeof profile.challenge === "string" && profile.challenge) parts.push(`Biggest challenge: ${profile.challenge}`);
+    if (typeof profile.aiLevel === "string" && profile.aiLevel) parts.push(`AI experience level: ${profile.aiLevel}`);
+    if (Array.isArray(profile.apps) && profile.apps.length > 0) parts.push(`Works in: ${(profile.apps as string[]).join(", ")}`);
     if (parts.length > 0) {
       contextParts.push(`User profile context: ${parts.join(", ")}. Use this to make the optimized prompt more relevant to their specific situation.`);
     }
@@ -92,10 +137,10 @@ export async function POST(req: NextRequest) {
 
   const chat = selectedChat || "ChatGPT";
   const product = selectedProduct || "General";
-  contextParts.push(`Target AI: ${chat}. ${CHAT_INSTRUCTIONS[chat] ?? ""}`);
+  contextParts.push(`User selected AI tool: ${chat}. ${CHAT_INSTRUCTIONS[chat] ?? ""}`);
   contextParts.push(`Output type: ${product}. ${PRODUCT_INSTRUCTIONS[product] ?? ""}`);
   if (lang === "pl") {
-    contextParts.push("IMPORTANT: Respond entirely in Polish (język polski). The improved prompt should also be written in Polish.");
+    contextParts.push("IMPORTANT: Respond entirely in Polish (język polski). The improved prompt should also be written in Polish. All recommendation fields (reason, tip, alternativeReason) should also be in Polish.");
   }
 
   const contextBlock = `\n\nContext:\n${contextParts.join("\n")}`;
@@ -113,7 +158,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "claude-haiku-3-20240307",
-        max_tokens: 600,
+        max_tokens: 900,
         system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
       }),
@@ -137,7 +182,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const data = await response.json();
+  const data = await response.json() as { content?: { text: string }[] };
   const raw = data.content?.[0]?.text;
 
   if (!raw) {
@@ -145,14 +190,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Empty response from API" }, { status: 502 });
   }
 
-  let parsed: { optimized: string; fixes: string[] };
+  let parsed: ParsedResponse;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(raw) as ParsedResponse;
   } catch {
     console.error("[optimize] JSON parse failed, raw:", raw.slice(0, 300));
-    return NextResponse.json({ result: raw, fixes: [] });
+    return NextResponse.json({ result: raw, fixes: [], recommendation: null });
   }
 
   console.log("[optimize] success, fixes:", parsed.fixes);
-  return NextResponse.json({ result: parsed.optimized, fixes: parsed.fixes ?? [] });
+  return NextResponse.json({
+    result: parsed.optimized,
+    fixes: parsed.fixes ?? [],
+    recommendation: parsed.recommendation ?? null,
+  });
 }
