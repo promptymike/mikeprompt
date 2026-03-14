@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "60 s"),
+  prefix: "rl:optimize",
+});
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
@@ -87,6 +95,15 @@ interface ParsedResponse {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "127.0.0.1";
+  const { success } = await ratelimit.limit(ip);
+  if (!success) {
+    return NextResponse.json(
+      { error: "RATE_LIMIT", message: "Too many requests. Please wait a moment." },
+      { status: 429 }
+    );
+  }
+
   const { prompt, role, goal, name, selectedChat, selectedProduct, lang, profile } = await req.json() as {
     prompt: string;
     role?: string;
@@ -174,6 +191,14 @@ export async function POST(req: NextRequest) {
   if (response.status === 429) {
     console.warn("[optimize] Rate limited by Anthropic API");
     return NextResponse.json({ error: "ratelimit" }, { status: 429 });
+  }
+
+  if (response.status === 403) {
+    console.warn("[optimize] Anthropic API returned 403 (geo/access block)");
+    return NextResponse.json(
+      { error: "GEO_BLOCKED", message: "MikePrompt is not available in your region. This may be due to geographic restrictions or VPN routing." },
+      { status: 451 }
+    );
   }
 
   if (!response.ok) {

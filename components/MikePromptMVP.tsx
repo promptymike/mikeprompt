@@ -51,6 +51,7 @@ const T = {
     unlock: "Unlock more",
     network_error: "Something went wrong. Please try again.",
     rate_limit_error: "Mike is very busy right now — please wait a moment and try again.",
+    geo_blocked_error: "MikePrompt is not available in your region. If you're using a VPN, try disabling it.",
     mikes_version: "Mike's polished version",
     copy_prompt: "📋 Copy prompt",
     more_precise: (n: number) => `✨ Mike made your prompt ${n}% more precise`,
@@ -101,6 +102,7 @@ const T = {
     unlock: "Odblokuj więcej",
     network_error: "Coś poszło nie tak. Spróbuj ponownie.",
     rate_limit_error: "Mike jest teraz bardzo zajęty — poczekaj chwilę i spróbuj ponownie.",
+    geo_blocked_error: "MikePrompt nie jest dostępny w Twoim regionie. Jeśli używasz VPN, spróbuj go wyłączyć.",
     mikes_version: "Wypolerowana wersja Mike'a",
     copy_prompt: "📋 Kopiuj prompt",
     more_precise: (n: number) => `✨ Mike sprawił, że Twój prompt jest o ${n}% precyzyjniejszy`,
@@ -465,7 +467,8 @@ const MikePromptMVP = () => {
         }),
       });
       const data = await response.json();
-      if (response.status === 429 || data.error === "ratelimit") { setError("ratelimit"); setLoading(false); return; }
+      if (response.status === 429 || data.error === "ratelimit" || data.error === "RATE_LIMIT") { setError("ratelimit"); setLoading(false); return; }
+      if (response.status === 451 || data.error === "GEO_BLOCKED") { setError("geo"); setLoading(false); return; }
       if (!response.ok) throw new Error(data.error || "API error");
       const result = data.result || "Something went wrong. Try again.";
       setOptimized(result);
@@ -1121,6 +1124,11 @@ const MikePromptMVP = () => {
           {error === "ratelimit" && (
             <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "rgba(255,152,0,0.08)", border: "1px solid rgba(255,152,0,0.25)", fontSize: 14, color: "#E65100", textAlign: "center" }}>
               ⏳ {t.rate_limit_error}
+            </div>
+          )}
+          {error === "geo" && (
+            <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "rgba(255,152,0,0.08)", border: "1px solid rgba(255,152,0,0.25)", fontSize: 14, color: "#E65100", textAlign: "center" }}>
+              🌍 {t.geo_blocked_error}
             </div>
           )}
 

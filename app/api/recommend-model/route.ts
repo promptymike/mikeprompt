@@ -1,4 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(20, "60 s"),
+  prefix: "rl:recommend",
+});
 
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
@@ -57,6 +65,15 @@ interface AnthropicResponse {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "127.0.0.1";
+  const { success } = await ratelimit.limit(ip);
+  if (!success) {
+    return NextResponse.json(
+      { error: "RATE_LIMIT", message: "Too many requests. Please wait a moment." },
+      { status: 429 }
+    );
+  }
+
   const body = await req.json() as { task?: string; lang?: string };
   const { task, lang } = body;
 
