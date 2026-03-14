@@ -6,7 +6,9 @@ import UseCases from "./UseCases";
 import About from "./About";
 import UserProfile, { type Profile, EMPTY_PROFILE } from "./UserProfile";
 import ModelComparison from "./ModelComparison";
+import SavedPrompts from "./SavedPrompts";
 import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
+import { supabase, hasSupabase } from "@/lib/supabase";
 
 type Lang = "en" | "pl";
 
@@ -17,6 +19,7 @@ const T = {
     tab_library: "📚 Library",
     tab_usecases: "💡 Use Cases",
     tab_models: "🧠 Models",
+    tab_history: "📂 History",
     tab_about: "👋 About",
     polished_today_plural: "prompts polished today",
     polished_today_single: "prompt polished today",
@@ -66,6 +69,7 @@ const T = {
     tab_library: "📚 Biblioteka",
     tab_usecases: "💡 Zastosowania",
     tab_models: "🧠 Modele",
+    tab_history: "📂 Historia",
     tab_about: "👋 O nas",
     polished_today_plural: "promptów wypolerowanych dziś",
     polished_today_single: "prompt wypolerowany dziś",
@@ -303,7 +307,8 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases" | "models" | "about">("polish");
+  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases" | "models" | "history" | "about">("polish");
+  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
   const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
@@ -321,6 +326,16 @@ const MikePromptMVP = () => {
     if (storedDark === "1") setDark(true);
     const storedProfile = loadProfile();
     if (storedProfile) setProfile(storedProfile);
+
+    if (hasSupabase) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) setCurrentUser({ id: data.user.id, email: data.user.email });
+      });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setCurrentUser(session?.user ? { id: session.user.id, email: session.user.email } : null);
+      });
+      return () => subscription.unsubscribe();
+    }
   }, []);
 
   const toggleLang = () => {
@@ -371,9 +386,32 @@ const MikePromptMVP = () => {
       setShowResults(true);
       setUsageCount((prev) => prev + 1);
       setDailyCount(incrementStoredCount());
+      // Save to cloud (logged in) or localStorage (anonymous)
+      savePromptToDB(result, data).catch(() => {});
+      saveToLocalHistory({ original: input, optimized: result, chat: selectedChat, fixes: Array.isArray(data.fixes) ? data.fixes : [], timestamp: new Date().toISOString() });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
     } catch { setError("network"); }
     setLoading(false);
+  };
+
+  const saveToLocalHistory = (entry: { original: string; optimized: string; chat: string; fixes: string[]; timestamp: string }) => {
+    const key = "mikeprompt_history";
+    const existing = JSON.parse(localStorage.getItem(key) ?? "[]") as typeof entry[];
+    localStorage.setItem(key, JSON.stringify([entry, ...existing].slice(0, 20)));
+  };
+
+  const savePromptToDB = async (result: string, data: { fixes?: string[]; recommendation?: unknown }) => {
+    if (!hasSupabase || !currentUser) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("saved_prompts") as any).insert({
+      user_id: currentUser.id,
+      original_prompt: input,
+      optimized_prompt: result,
+      selected_chat: selectedChat,
+      selected_product: selectedProduct,
+      fixes: data.fixes ?? [],
+      recommendation: data.recommendation ?? null,
+    });
   };
 
   const copyText = (text: string) => navigator.clipboard.writeText(text);
@@ -406,6 +444,7 @@ const MikePromptMVP = () => {
     ["library", t.tab_library],
     ["usecases", t.tab_usecases],
     ["models", t.tab_models],
+    ["history", t.tab_history],
     ["about", t.tab_about],
   ] as const;
 
@@ -542,6 +581,18 @@ const MikePromptMVP = () => {
       }}>
         {/* About tab */}
         {activeTab === "about" && <About lang={lang} />}
+
+        {/* History tab */}
+        {activeTab === "history" && (
+          <SavedPrompts
+            lang={lang}
+            currentUser={currentUser}
+            onReuse={(prompt) => {
+              setInput(prompt); setActiveTab("polish");
+              setShowResults(false); setOptimized(""); setFixes([]);
+            }}
+          />
+        )}
 
         {/* Models tab */}
         {activeTab === "models" && <ModelComparison lang={lang} />}
