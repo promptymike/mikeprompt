@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import PromptLibrary from "./PromptLibrary";
 import UseCases from "./UseCases";
+import About from "./About";
+import UserProfile, { type Profile, EMPTY_PROFILE } from "./UserProfile";
 
 type Lang = "en" | "pl";
 
@@ -12,8 +14,9 @@ const T = {
     tab_polish: "✨ Polish",
     tab_library: "📚 Library",
     tab_usecases: "💡 Use Cases",
-    polished_today_single: "prompt polished today",
+    tab_about: "👋 About",
     polished_today_plural: "prompts polished today",
+    polished_today_single: "prompt polished today",
     free_left: "free polishes left",
     sign_up_more: "Sign up for more",
     headline_pre: "AI that makes ",
@@ -58,8 +61,9 @@ const T = {
     tab_polish: "✨ Poleruj",
     tab_library: "📚 Biblioteka",
     tab_usecases: "💡 Zastosowania",
-    polished_today_single: "prompt wypolerowany dziś",
+    tab_about: "👋 O nas",
     polished_today_plural: "promptów wypolerowanych dziś",
+    polished_today_single: "prompt wypolerowany dziś",
     free_left: "darmowych polerów",
     sign_up_more: "Zarejestruj się po więcej",
     headline_pre: "AI, które sprawia że jesteś ",
@@ -147,15 +151,104 @@ const PRO_TIPS = [
 ];
 
 const TODAY_KEY = () => `mikeprompt_count_${new Date().toISOString().slice(0, 10)}`;
-const getStoredCount = (): number => {
+const getStoredCount = () => {
   if (typeof window === "undefined") return 0;
   return parseInt(localStorage.getItem(TODAY_KEY()) ?? "0", 10);
 };
-const incrementStoredCount = (): number => {
+const incrementStoredCount = () => {
   const next = getStoredCount() + 1;
   localStorage.setItem(TODAY_KEY(), String(next));
   return next;
 };
+
+const CSS_VARS = `
+[data-theme="light"] {
+  --c-page-bg: linear-gradient(165deg, #FFF8F0 0%, #FFF1E6 30%, #FFE8D6 60%, #FFDDC1 100%);
+  --c-card: white;
+  --c-card-border: rgba(0,0,0,0.06);
+  --c-card-shadow: 0 12px 40px rgba(0,0,0,0.05);
+  --c-card-sm: 0 2px 12px rgba(0,0,0,0.03);
+  --c-input: white;
+  --c-input-border: rgba(0,0,0,0.08);
+  --c-text1: #2D2A26;
+  --c-text2: #6B6560;
+  --c-text3: #A09890;
+  --c-text4: #C0B8B0;
+  --c-text5: #C8C0BA;
+  --c-sep: rgba(0,0,0,0.04);
+  --c-tab-bar: rgba(0,0,0,0.04);
+  --c-tab-active: white;
+  --c-tab-active-text: #2D2A26;
+  --c-tab-inactive-text: #A09890;
+  --c-chip-bg: rgba(255,255,255,0.8);
+  --c-chip-border: rgba(0,0,0,0.08);
+  --c-chip-color: #6B6560;
+  --c-hover: rgba(0,0,0,0.015);
+  --c-fix-bg: white;
+  --c-fix-border: rgba(0,0,0,0.04);
+  --c-tip-bg: rgba(255,183,77,0.04);
+  --c-count-bg: rgba(0,0,0,0.04);
+  --c-toggle: white;
+  --c-toggle-border: rgba(0,0,0,0.08);
+  --c-toggle-color: #A09890;
+  --c-prompt-text: #4A4540;
+  --c-stat-bg: rgba(0,0,0,0.01);
+  --c-result-border: rgba(76,175,80,0.12);
+  --c-green-bg: rgba(76,175,80,0.06);
+  --c-green-border: rgba(76,175,80,0.12);
+  --c-green-text: #2E7D32;
+  --c-err-bg: #FFF5F5;
+  --c-err-border: rgba(244,67,54,0.1);
+  --c-overlay: rgba(0,0,0,0.4);
+  --c-sidebar: white;
+  --c-badge: rgba(255,110,64,0.08);
+  --c-shape1: rgba(255,183,77,0.12);
+  --c-shape2: rgba(255,138,101,0.08);
+}
+[data-theme="dark"] {
+  --c-page-bg: linear-gradient(165deg, #1E1B18 0%, #1C1914 30%, #1A1710 60%, #181408 100%);
+  --c-card: #252220;
+  --c-card-border: rgba(255,255,255,0.07);
+  --c-card-shadow: 0 12px 40px rgba(0,0,0,0.35);
+  --c-card-sm: 0 2px 12px rgba(0,0,0,0.25);
+  --c-input: #2C2925;
+  --c-input-border: rgba(255,255,255,0.09);
+  --c-text1: #E0DAD4;
+  --c-text2: #9A918A;
+  --c-text3: #6E6560;
+  --c-text4: #4E4844;
+  --c-text5: #444040;
+  --c-sep: rgba(255,255,255,0.06);
+  --c-tab-bar: rgba(255,255,255,0.06);
+  --c-tab-active: #2C2925;
+  --c-tab-active-text: #E0DAD4;
+  --c-tab-inactive-text: #6E6560;
+  --c-chip-bg: rgba(255,255,255,0.04);
+  --c-chip-border: rgba(255,255,255,0.08);
+  --c-chip-color: #7A7068;
+  --c-hover: rgba(255,255,255,0.025);
+  --c-fix-bg: #2C2925;
+  --c-fix-border: rgba(255,255,255,0.06);
+  --c-tip-bg: rgba(255,183,77,0.07);
+  --c-count-bg: rgba(255,255,255,0.06);
+  --c-toggle: #2C2925;
+  --c-toggle-border: rgba(255,255,255,0.09);
+  --c-toggle-color: #6E6560;
+  --c-prompt-text: #B0A8A0;
+  --c-stat-bg: rgba(255,255,255,0.02);
+  --c-result-border: rgba(76,175,80,0.2);
+  --c-green-bg: rgba(76,175,80,0.08);
+  --c-green-border: rgba(76,175,80,0.18);
+  --c-green-text: #4CAF50;
+  --c-err-bg: rgba(244,67,54,0.08);
+  --c-err-border: rgba(244,67,54,0.15);
+  --c-overlay: rgba(0,0,0,0.65);
+  --c-sidebar: #1A1714;
+  --c-badge: rgba(255,110,64,0.12);
+  --c-shape1: rgba(255,183,77,0.05);
+  --c-shape2: rgba(255,138,101,0.04);
+}
+`;
 
 const MikePromptMVP = () => {
   const [input, setInput] = useState("");
@@ -177,16 +270,25 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases">("polish");
+  const [activeTab, setActiveTab] = useState<"polish" | "library" | "usecases" | "about">("polish");
   const [lang, setLang] = useState<Lang>("en");
+  const [dark, setDark] = useState(false);
+  const [profile, setProfile] = useState<Profile>(EMPTY_PROFILE);
+  const [profileOpen, setProfileOpen] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
   useEffect(() => {
     setVisible(true);
     setDailyCount(getStoredCount());
-    const stored = localStorage.getItem("mikeprompt_lang");
-    if (stored === "pl" || stored === "en") setLang(stored);
+    const storedLang = localStorage.getItem("mikeprompt_lang");
+    if (storedLang === "pl" || storedLang === "en") setLang(storedLang);
+    const storedDark = localStorage.getItem("mikeprompt_dark");
+    if (storedDark === "1") setDark(true);
+    const storedProfile = localStorage.getItem("mikeprompt_profile");
+    if (storedProfile) {
+      try { setProfile(JSON.parse(storedProfile)); } catch { /* ignore */ }
+    }
   }, []);
 
   const toggleLang = () => {
@@ -195,17 +297,23 @@ const MikePromptMVP = () => {
     localStorage.setItem("mikeprompt_lang", next);
   };
 
+  const toggleDark = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem("mikeprompt_dark", next ? "1" : "0");
+  };
+
+  const saveProfile = (p: Profile) => {
+    setProfile(p);
+    localStorage.setItem("mikeprompt_profile", JSON.stringify(p));
+  };
+
   const t = T[lang];
 
   const optimizePrompt = async () => {
     if (!input.trim()) return;
-    if (usageCount >= MAX_FREE && !emailSubmitted) {
-      setError("signup");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    setShowResults(false);
+    if (usageCount >= MAX_FREE && !emailSubmitted) { setError("signup"); return; }
+    setLoading(true); setError(""); setShowResults(false);
     try {
       const response = await fetch("/api/optimize", {
         method: "POST",
@@ -215,9 +323,8 @@ const MikePromptMVP = () => {
           role: role || undefined,
           goal: goal || undefined,
           name: userName || undefined,
-          selectedChat,
-          selectedProduct,
-          lang,
+          selectedChat, selectedProduct, lang,
+          profile: (profile.name || profile.role || profile.industry) ? profile : undefined,
         }),
       });
       const data = await response.json();
@@ -229,14 +336,9 @@ const MikePromptMVP = () => {
       setFeedback(null);
       setShowResults(true);
       setUsageCount((prev) => prev + 1);
-      const newCount = incrementStoredCount();
-      setDailyCount(newCount);
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 300);
-    } catch {
-      setError("network");
-    }
+      setDailyCount(incrementStoredCount());
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+    } catch { setError("network"); }
     setLoading(false);
   };
 
@@ -244,21 +346,8 @@ const MikePromptMVP = () => {
 
   const handleFeedback = (type: "positive" | "negative") => {
     setFeedback(type);
-    console.log({
-      timestamp: new Date().toISOString(),
-      original_prompt: input,
-      optimized_prompt: optimized,
-      feedback: type,
-      user_role: role || null,
-      user_goal: goal || null,
-    });
+    console.log({ timestamp: new Date().toISOString(), original_prompt: input, optimized_prompt: optimized, feedback: type });
   };
-
-  const inputTokens = estimateTokens(input);
-  const outputTokens = estimateTokens(optimized);
-  const precisionGain = outputTokens > 0
-    ? Math.abs(Math.round(((outputTokens - inputTokens) / outputTokens) * 100))
-    : 0;
 
   const submitWaitlist = async (onSuccess: () => void) => {
     if (!email) return;
@@ -270,40 +359,57 @@ const MikePromptMVP = () => {
     onSuccess();
   };
 
+  const inputTokens = estimateTokens(input);
+  const outputTokens = estimateTokens(optimized);
+  const precisionGain = outputTokens > 0
+    ? Math.abs(Math.round(((outputTokens - inputTokens) / outputTokens) * 100))
+    : 0;
+
+  const profileInitial = profile.name ? profile.name[0].toUpperCase() : null;
+
+  const TABS = [
+    ["polish", t.tab_polish],
+    ["library", t.tab_library],
+    ["usecases", t.tab_usecases],
+    ["about", t.tab_about],
+  ] as const;
+
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(165deg, #FFF8F0 0%, #FFF1E6 30%, #FFE8D6 60%, #FFDDC1 100%)",
-      fontFamily: "'DM Sans', sans-serif",
-      color: "#2D2A26",
-    }}>
+    <div
+      data-theme={dark ? "dark" : "light"}
+      style={{
+        minHeight: "100vh",
+        background: "var(--c-page-bg)",
+        fontFamily: "'DM Sans', sans-serif",
+        color: "var(--c-text1)",
+      }}
+    >
       <link
         href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet"
       />
+
       {/* Floating bg shapes */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
         <div style={{
-          position: "absolute", top: "8%", right: "8%", width: 350, height: 350,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,183,77,0.12) 0%, transparent 70%)",
+          position: "absolute", top: "8%", right: "8%", width: 350, height: 350, borderRadius: "50%",
+          background: "radial-gradient(circle, var(--c-shape1) 0%, transparent 70%)",
         }} />
         <div style={{
-          position: "absolute", bottom: "15%", left: "5%", width: 250, height: 250,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,138,101,0.08) 0%, transparent 70%)",
+          position: "absolute", bottom: "15%", left: "5%", width: 250, height: 250, borderRadius: "50%",
+          background: "radial-gradient(circle, var(--c-shape2) 0%, transparent 70%)",
         }} />
       </div>
 
       {/* Nav */}
       <nav style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "20px 24px", position: "relative", zIndex: 10,
+        padding: "18px 24px", position: "relative", zIndex: 10,
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(-20px)",
         transition: "all 0.8s ease",
         maxWidth: 1200, margin: "0 auto",
-        flexWrap: "wrap", gap: 12,
+        flexWrap: "wrap", gap: 10,
       }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -316,10 +422,10 @@ const MikePromptMVP = () => {
             fontFamily: "'Fraunces', serif",
           }}>M</div>
           <div>
-            <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: "'Fraunces', serif" }}>
+            <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: "'Fraunces', serif", color: "var(--c-text1)" }}>
               mike<span style={{ color: "#FF6E40" }}>prompt</span>
             </span>
-            <div style={{ fontSize: 11, color: "#C0B8B0", fontWeight: 400, letterSpacing: "0.2px", marginTop: -2 }}>
+            <div style={{ fontSize: 11, color: "var(--c-text4)", fontWeight: 400, letterSpacing: "0.2px", marginTop: -2 }}>
               {t.tagline}
             </div>
           </div>
@@ -328,25 +434,21 @@ const MikePromptMVP = () => {
         {/* Tab switcher */}
         <div style={{
           display: "flex", gap: 4,
-          background: "rgba(0,0,0,0.04)", borderRadius: 10, padding: 4,
+          background: "var(--c-tab-bar)", borderRadius: 10, padding: 4,
+          flexWrap: "wrap",
         }}>
-          {([
-            ["polish", t.tab_polish],
-            ["library", t.tab_library],
-            ["usecases", t.tab_usecases],
-          ] as const).map(([tab, label]) => (
+          {TABS.map(([tab, label]) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: "6px 13px", borderRadius: 7, border: "none",
-                background: activeTab === tab ? "white" : "transparent",
-                color: activeTab === tab ? "#2D2A26" : "#A09890",
+                background: activeTab === tab ? "var(--c-tab-active)" : "transparent",
+                color: activeTab === tab ? "var(--c-tab-active-text)" : "var(--c-tab-inactive-text)",
                 fontSize: 13, fontWeight: activeTab === tab ? 600 : 400,
                 cursor: "pointer",
-                boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                transition: "all 0.18s",
-                whiteSpace: "nowrap",
+                boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                transition: "all 0.18s", whiteSpace: "nowrap",
               }}
             >
               {label}
@@ -354,75 +456,110 @@ const MikePromptMVP = () => {
           ))}
         </div>
 
-        {/* Right side: counter + polishes + lang toggle */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        {/* Right: counter + polishes + dark + lang + profile */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {dailyCount > 0 && (
             <div style={{
               fontSize: 13, color: "#FF6E40", fontWeight: 600,
-              background: "rgba(255,110,64,0.08)", borderRadius: 100,
-              padding: "4px 12px",
+              background: "var(--c-badge)", borderRadius: 100, padding: "4px 12px",
             }}>
               🔥 {dailyCount} {dailyCount !== 1 ? t.polished_today_plural : t.polished_today_single}
             </div>
           )}
-          <div style={{ fontSize: 13, color: "#A09890", fontWeight: 500 }}>
-            {MAX_FREE - usageCount > 0
-              ? `${MAX_FREE - usageCount} ${t.free_left}`
-              : t.sign_up_more}
+          <div style={{ fontSize: 13, color: "var(--c-text3)", fontWeight: 500 }}>
+            {MAX_FREE - usageCount > 0 ? `${MAX_FREE - usageCount} ${t.free_left}` : t.sign_up_more}
           </div>
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleDark}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{
+              padding: "4px 10px", borderRadius: 8,
+              border: "1px solid var(--c-toggle-border)",
+              background: "var(--c-toggle)", fontSize: 14, cursor: "pointer",
+              color: "var(--c-toggle-color)", transition: "all 0.15s",
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-toggle-border)"; }}
+          >
+            {dark ? "☀️" : "🌙"}
+          </button>
           {/* Language toggle */}
           <button
             onClick={toggleLang}
             style={{
               padding: "4px 10px", borderRadius: 8,
-              border: "1px solid rgba(0,0,0,0.08)",
-              background: "white", fontSize: 12, fontWeight: 600,
-              color: "#A09890", cursor: "pointer", transition: "all 0.15s",
+              border: "1px solid var(--c-toggle-border)",
+              background: "var(--c-toggle)", fontSize: 12, fontWeight: 600,
+              color: "var(--c-toggle-color)", cursor: "pointer", transition: "all 0.15s",
               letterSpacing: "0.3px",
             }}
             onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.color = "#A09890"; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-toggle-border)"; e.currentTarget.style.color = "var(--c-toggle-color)"; }}
           >
             {lang === "en" ? "PL" : "EN"}
+          </button>
+          {/* Profile icon */}
+          <button
+            onClick={() => setProfileOpen(true)}
+            title="Your profile"
+            style={{
+              width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
+              background: profileInitial ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)",
+              color: profileInitial ? "white" : "var(--c-toggle-color)",
+              fontSize: profileInitial ? 14 : 16, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.2s",
+              boxShadow: profileInitial ? "0 2px 8px rgba(255,110,64,0.3)" : "none",
+              outline: "1px solid var(--c-toggle-border)",
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.transform = "scale(1.08)"; }}
+            onMouseOut={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+          >
+            {profileInitial ?? "👤"}
           </button>
         </div>
       </nav>
 
-      {/* Main content */}
+      {/* Profile sidebar */}
+      <UserProfile
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        onSave={saveProfile}
+        initialProfile={profile}
+      />
+
+      {/* Main */}
       <main style={{
         maxWidth: 800, margin: "0 auto", padding: "20px 24px 60px",
         position: "relative", zIndex: 5,
       }}>
+        {/* About tab */}
+        {activeTab === "about" && <About />}
 
-        {/* ── Use Cases tab ── */}
+        {/* Use Cases tab */}
         {activeTab === "usecases" && (
           <UseCases
             lang={lang}
             onTryNow={(prompt) => {
-              setInput(prompt);
-              setActiveTab("polish");
-              setShowResults(false);
-              setOptimized("");
-              setFixes([]);
+              setInput(prompt); setActiveTab("polish");
+              setShowResults(false); setOptimized(""); setFixes([]);
             }}
           />
         )}
 
-        {/* ── Library tab ── */}
+        {/* Library tab */}
         {activeTab === "library" && (
           <PromptLibrary
             lang={lang}
             onPolish={(prompt) => {
-              setInput(prompt);
-              setActiveTab("polish");
-              setShowResults(false);
-              setOptimized("");
-              setFixes([]);
+              setInput(prompt); setActiveTab("polish");
+              setShowResults(false); setOptimized(""); setFixes([]);
             }}
           />
         )}
 
-        {/* ── Polish tab ── */}
+        {/* Polish tab */}
         {activeTab === "polish" && (<>
           {/* Hero */}
           <div style={{
@@ -435,39 +572,28 @@ const MikePromptMVP = () => {
               fontFamily: "'Fraunces', serif",
               fontSize: "clamp(34px, 6vw, 56px)",
               fontWeight: 700, lineHeight: 1.1, marginBottom: 16, letterSpacing: "-1.5px",
+              color: "var(--c-text1)",
             }}>
               {t.headline_pre}
-              <span style={{
-                background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              }}>
+              <span style={{ background: "linear-gradient(135deg, #FF6E40, #FF8A65)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 {t.headline_accent}
               </span>
               {t.headline_post}
             </h1>
-            <p style={{ fontSize: 17, color: "#6B6560", maxWidth: 480, margin: "0 auto 12px", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 17, color: "var(--c-text2)", maxWidth: 480, margin: "0 auto 12px", lineHeight: 1.6 }}>
               {t.subheadline}
             </p>
-            <p style={{ fontSize: 13, color: "#B0A89E", marginBottom: 8 }}>
-              {t.works_with}
-            </p>
-            <p style={{ fontSize: 12, color: "#C8C0BA", fontStyle: "italic" }}>
-              {t.stat}
-            </p>
+            <p style={{ fontSize: 13, color: "var(--c-text3)", marginBottom: 8 }}>{t.works_with}</p>
+            <p style={{ fontSize: 12, color: "var(--c-text5)", fontStyle: "italic" }}>{t.stat}</p>
           </div>
 
-          {/* ── Example chips ── */}
-          <div style={{
-            marginBottom: 28,
-            opacity: visible ? 1 : 0, transition: "all 0.8s ease 0.35s",
-          }}>
+          {/* Example chips */}
+          <div style={{ marginBottom: 28, opacity: visible ? 1 : 0, transition: "all 0.8s ease 0.35s" }}>
             <p style={{
-              fontSize: 12, fontWeight: 600, color: "#C0B8B0",
-              textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 10,
-              textAlign: "center",
-            }}>
-              {t.try_example}
-            </p>
+              fontSize: 12, fontWeight: 600, color: "var(--c-text4)",
+              textTransform: "uppercase", letterSpacing: "0.6px",
+              marginBottom: 10, textAlign: "center",
+            }}>{t.try_example}</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
               {EXAMPLE_CHIPS[lang].map((chip) => (
                 <button
@@ -475,25 +601,21 @@ const MikePromptMVP = () => {
                   onClick={() => { setInput(chip.prompt); setShowResults(false); setOptimized(""); setFixes([]); }}
                   style={{
                     padding: "7px 14px", borderRadius: 100,
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    background: "rgba(255,255,255,0.8)",
-                    fontSize: 13, color: "#6B6560", cursor: "pointer",
+                    border: "1px solid var(--c-chip-border)",
+                    background: "var(--c-chip-bg)",
+                    fontSize: 13, color: "var(--c-chip-color)", cursor: "pointer",
                     transition: "all 0.18s",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                   }}
                   onMouseOver={(e) => {
-                    const el = e.currentTarget;
-                    el.style.borderColor = "#FF8A65";
-                    el.style.color = "#FF6E40";
-                    el.style.background = "rgba(255,110,64,0.04)";
-                    el.style.boxShadow = "0 2px 8px rgba(255,110,64,0.12)";
+                    e.currentTarget.style.borderColor = "#FF8A65";
+                    e.currentTarget.style.color = "#FF6E40";
+                    e.currentTarget.style.background = "rgba(255,110,64,0.06)";
                   }}
                   onMouseOut={(e) => {
-                    const el = e.currentTarget;
-                    el.style.borderColor = "rgba(0,0,0,0.08)";
-                    el.style.color = "#6B6560";
-                    el.style.background = "rgba(255,255,255,0.8)";
-                    el.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)";
+                    e.currentTarget.style.borderColor = "var(--c-chip-border)";
+                    e.currentTarget.style.color = "var(--c-chip-color)";
+                    e.currentTarget.style.background = "var(--c-chip-bg)";
                   }}
                 >
                   {chip.icon} {chip.label}
@@ -502,17 +624,16 @@ const MikePromptMVP = () => {
             </div>
           </div>
 
-          {/* ── Input card ── */}
+          {/* Input card */}
           <div style={{
-            background: "white", borderRadius: 20,
-            border: "1px solid rgba(0,0,0,0.06)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
+            background: "var(--c-card)", borderRadius: 20,
+            border: "1px solid var(--c-card-border)",
+            boxShadow: "var(--c-card-shadow)",
             overflow: "hidden",
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(20px)",
             transition: "all 0.8s ease 0.5s",
           }}>
-            {/* Textarea */}
             <div style={{ padding: "24px 24px 0" }}>
               <textarea
                 value={input}
@@ -521,23 +642,17 @@ const MikePromptMVP = () => {
                 rows={4}
                 style={{
                   width: "100%", border: "none", outline: "none", resize: "vertical",
-                  fontSize: 16, lineHeight: 1.7, color: "#2D2A26",
+                  fontSize: 16, lineHeight: 1.7, color: "var(--c-text1)",
                   fontFamily: "'DM Sans', sans-serif", background: "transparent",
                   minHeight: 100,
                 }}
               />
             </div>
 
-            {/* ── Chat & Product selectors ── */}
-            <div style={{
-              padding: "12px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
-              display: "flex", flexDirection: "column", gap: 10,
-            }}>
-              {/* Chat selector */}
+            {/* Selectors */}
+            <div style={{ padding: "12px 24px", borderTop: "1px solid var(--c-sep)", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 90 }}>
-                  {t.optimize_for}
-                </span>
+                <span style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 600, minWidth: 90 }}>{t.optimize_for}</span>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {["ChatGPT", "Claude", "Gemini", "Copilot"].map((chat) => (
                     <button
@@ -545,63 +660,55 @@ const MikePromptMVP = () => {
                       onClick={() => setSelectedChat(chat)}
                       style={{
                         padding: "5px 12px", borderRadius: 100,
-                        border: selectedChat === chat ? "1px solid #FF8A65" : "1px solid rgba(0,0,0,0.08)",
-                        background: selectedChat === chat ? "rgba(255,110,64,0.07)" : "white",
+                        border: selectedChat === chat ? "1px solid #FF8A65" : "1px solid var(--c-chip-border)",
+                        background: selectedChat === chat ? "rgba(255,110,64,0.07)" : "var(--c-card)",
                         fontSize: 12,
-                        color: selectedChat === chat ? "#FF6E40" : "#A09890",
+                        color: selectedChat === chat ? "#FF6E40" : "var(--c-text3)",
                         fontWeight: selectedChat === chat ? 600 : 400,
                         cursor: "pointer", transition: "all 0.15s",
                       }}
-                    >
-                      {chat}
-                    </button>
+                    >{chat}</button>
                   ))}
                 </div>
               </div>
-              {/* Product selector */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: "#A09890", fontWeight: 600, minWidth: 90 }}>
-                  {t.output_for}
-                </span>
+                <span style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 600, minWidth: 90 }}>{t.output_for}</span>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {[
-                    { en: "📧 Email", pl: "📧 Email", value: "Email" },
-                    { en: "📊 Excel", pl: "📊 Excel", value: "Excel" },
-                    { en: "📑 PowerPoint", pl: "📑 PowerPoint", value: "PowerPoint" },
-                    { en: "📄 Document", pl: "📄 Dokument", value: "Document" },
-                    { en: "💬 General", pl: "💬 Ogólny", value: "General" },
-                  ].map(({ en: enL, pl: plL, value }) => (
+                    { en: "📧 Email", pl: "📧 Email", v: "Email" },
+                    { en: "📊 Excel", pl: "📊 Excel", v: "Excel" },
+                    { en: "📑 PowerPoint", pl: "📑 PowerPoint", v: "PowerPoint" },
+                    { en: "📄 Document", pl: "📄 Dokument", v: "Document" },
+                    { en: "💬 General", pl: "💬 Ogólny", v: "General" },
+                  ].map(({ en: enL, pl: plL, v }) => (
                     <button
-                      key={value}
-                      onClick={() => setSelectedProduct(value)}
+                      key={v}
+                      onClick={() => setSelectedProduct(v)}
                       style={{
                         padding: "5px 12px", borderRadius: 100,
-                        border: selectedProduct === value ? "1px solid #FF8A65" : "1px solid rgba(0,0,0,0.08)",
-                        background: selectedProduct === value ? "rgba(255,110,64,0.07)" : "white",
+                        border: selectedProduct === v ? "1px solid #FF8A65" : "1px solid var(--c-chip-border)",
+                        background: selectedProduct === v ? "rgba(255,110,64,0.07)" : "var(--c-card)",
                         fontSize: 12,
-                        color: selectedProduct === value ? "#FF6E40" : "#A09890",
-                        fontWeight: selectedProduct === value ? 600 : 400,
+                        color: selectedProduct === v ? "#FF6E40" : "var(--c-text3)",
+                        fontWeight: selectedProduct === v ? 600 : 400,
                         cursor: "pointer", transition: "all 0.15s",
                       }}
-                    >
-                      {lang === "pl" ? plL : enL}
-                    </button>
+                    >{lang === "pl" ? plL : enL}</button>
                   ))}
                 </div>
               </div>
-              {/* Trust badge */}
-              <p style={{ fontSize: 12, color: "#C0B8B0", textAlign: "center", marginTop: 2 }}>
+              <p style={{ fontSize: 12, color: "var(--c-text4)", textAlign: "center", marginTop: 2 }}>
                 {t.trust_badge}
               </p>
             </div>
 
             {/* Action bar */}
             <div style={{
-              padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
+              padding: "14px 24px", borderTop: "1px solid var(--c-sep)",
               display: "flex", justifyContent: "space-between", alignItems: "center",
               flexWrap: "wrap", gap: 12,
             }}>
-              <div style={{ fontSize: 13, color: "#C0B8B0" }}>
+              <div style={{ fontSize: 13, color: "var(--c-text4)" }}>
                 {input.length > 0 ? t.chars_hint(input.length) : t.paste_hint}
               </div>
               <button
@@ -613,8 +720,8 @@ const MikePromptMVP = () => {
                     ? "linear-gradient(135deg, #FFAB91, #FFCCBC)"
                     : input.trim()
                     ? "linear-gradient(135deg, #FF6E40, #FF8A65)"
-                    : "rgba(0,0,0,0.06)",
-                  color: input.trim() ? "white" : "#C0B8B0",
+                    : "var(--c-count-bg)",
+                  color: input.trim() ? "white" : "var(--c-text4)",
                   fontSize: 15, fontWeight: 600,
                   cursor: input.trim() ? "pointer" : "default",
                   boxShadow: input.trim() ? "0 4px 16px rgba(255,110,64,0.3)" : "none",
@@ -636,8 +743,8 @@ const MikePromptMVP = () => {
               </button>
             </div>
 
-            {/* ── Personalise (collapsible) ── */}
-            <div style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+            {/* Personalise (collapsible) */}
+            <div style={{ borderTop: "1px solid var(--c-sep)" }}>
               <button
                 onClick={() => setContextOpen((v) => !v)}
                 style={{
@@ -646,34 +753,24 @@ const MikePromptMVP = () => {
                   background: "transparent", border: "none", cursor: "pointer",
                 }}
               >
-                <span style={{ fontSize: 12, color: "#C0B8B0", fontWeight: 500 }}>
-                  {t.personalise}
-                </span>
+                <span style={{ fontSize: 12, color: "var(--c-text4)", fontWeight: 500 }}>{t.personalise}</span>
                 <span style={{
-                  fontSize: 11, color: "#D0C8C0",
+                  fontSize: 11, color: "var(--c-text4)",
                   transform: contextOpen ? "rotate(180deg)" : "rotate(0deg)",
                   transition: "transform 0.2s", display: "inline-block",
                 }}>▼</span>
               </button>
-
               {contextOpen && (
-                <div style={{
-                  padding: "4px 24px 20px",
-                  display: "flex", flexWrap: "wrap", gap: 12,
-                  animation: "fadeUp 0.2s ease",
-                }}>
+                <div style={{ padding: "4px 24px 20px", display: "flex", flexWrap: "wrap", gap: 12, animation: "fadeUp 0.2s ease" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 160px" }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                      {t.your_role}
-                    </label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text4)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{t.your_role}</label>
                     <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
+                      value={role} onChange={(e) => setRole(e.target.value)}
                       style={{
                         padding: "8px 12px", borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.08)",
-                        fontSize: 13, color: role ? "#2D2A26" : "#C0B8B0",
-                        background: "white", outline: "none", cursor: "pointer",
+                        border: "1px solid var(--c-input-border)",
+                        fontSize: 13, color: role ? "var(--c-text1)" : "var(--c-text4)",
+                        background: "var(--c-input)", outline: "none", cursor: "pointer",
                         fontFamily: "'DM Sans', sans-serif",
                       }}
                     >
@@ -682,41 +779,33 @@ const MikePromptMVP = () => {
                     </select>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "2 1 200px" }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                      {t.your_goal}
-                    </label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text4)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{t.your_goal}</label>
                     <input
-                      type="text"
-                      value={goal}
-                      onChange={(e) => setGoal(e.target.value)}
+                      type="text" value={goal} onChange={(e) => setGoal(e.target.value)}
                       placeholder={t.goal_placeholder}
                       style={{
                         padding: "8px 12px", borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.08)",
-                        fontSize: 13, color: "#2D2A26", background: "white",
+                        border: "1px solid var(--c-input-border)",
+                        fontSize: 13, color: "var(--c-text1)", background: "var(--c-input)",
                         outline: "none", fontFamily: "'DM Sans', sans-serif",
                       }}
                       onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-                      onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
+                      onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
                     />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 140px" }}>
-                    <label style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", textTransform: "uppercase", letterSpacing: "0.4px" }}>
-                      {t.your_name}
-                    </label>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text4)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{t.your_name}</label>
                     <input
-                      type="text"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
+                      type="text" value={userName} onChange={(e) => setUserName(e.target.value)}
                       placeholder={t.name_placeholder}
                       style={{
                         padding: "8px 12px", borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.08)",
-                        fontSize: 13, color: "#2D2A26", background: "white",
+                        border: "1px solid var(--c-input-border)",
+                        fontSize: 13, color: "var(--c-text1)", background: "var(--c-input)",
                         outline: "none", fontFamily: "'DM Sans', sans-serif",
                       }}
                       onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-                      onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
+                      onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
                     />
                   </div>
                 </div>
@@ -724,16 +813,14 @@ const MikePromptMVP = () => {
             </div>
           </div>
 
-          {/* Error states */}
+          {/* Signup error */}
           {error === "signup" && (
             <div style={{
               marginTop: 16, padding: "18px 24px", borderRadius: 16,
-              background: "white", border: "1px solid rgba(255,110,64,0.15)",
+              background: "var(--c-card)", border: "1px solid rgba(255,110,64,0.15)",
               textAlign: "center",
             }}>
-              <p style={{ fontSize: 14, color: "#6B6560", marginBottom: 12 }}>
-                {t.used_all(MAX_FREE)}
-              </p>
+              <p style={{ fontSize: 14, color: "var(--c-text2)", marginBottom: 12 }}>{t.used_all(MAX_FREE)}</p>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -743,224 +830,140 @@ const MikePromptMVP = () => {
               >
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  style={{
-                    padding: "10px 16px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)",
-                    fontSize: 14, outline: "none", minWidth: 220,
-                  }} />
-                <button type="submit" style={{
-                  padding: "10px 20px", borderRadius: 10, border: "none",
-                  background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                  color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
-                }}>{t.unlock}</button>
+                  style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--c-input-border)", fontSize: 14, outline: "none", minWidth: 220, background: "var(--c-input)", color: "var(--c-text1)" }} />
+                <button type="submit" style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #FF6E40, #FF8A65)", color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>{t.unlock}</button>
               </form>
             </div>
           )}
           {error === "network" && (
-            <div style={{
-              marginTop: 16, padding: "14px 24px", borderRadius: 12,
-              background: "#FFF5F5", border: "1px solid rgba(244,67,54,0.1)",
-              fontSize: 14, color: "#E53935", textAlign: "center",
-            }}>
+            <div style={{ marginTop: 16, padding: "14px 24px", borderRadius: 12, background: "var(--c-err-bg)", border: "1px solid var(--c-err-border)", fontSize: 14, color: "#E53935", textAlign: "center" }}>
               {t.network_error}
             </div>
           )}
 
-          {/* ── Results ── */}
+          {/* Results */}
           {showResults && optimized && (
             <div ref={resultRef} style={{
-              marginTop: 24, background: "white", borderRadius: 20,
-              border: "1px solid rgba(76,175,80,0.12)",
-              boxShadow: "0 12px 40px rgba(0,0,0,0.05)",
+              marginTop: 24, background: "var(--c-card)", borderRadius: 20,
+              border: "1px solid var(--c-result-border)",
+              boxShadow: "var(--c-card-shadow)",
               overflow: "hidden", animation: "fadeUp 0.5s ease",
             }}>
-              {/* Result header */}
               <div style={{
-                padding: "14px 24px", borderBottom: "1px solid rgba(0,0,0,0.04)",
+                padding: "14px 24px", borderBottom: "1px solid var(--c-sep)",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "rgba(76,175,80,0.03)", flexWrap: "wrap", gap: 8,
+                background: "var(--c-green-bg)", flexWrap: "wrap", gap: 8,
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#43A047" }}>
                   <span>✨</span> {t.mikes_version}
                 </div>
                 <button
                   onClick={() => copyText(optimized)}
-                  style={{
-                    padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.06)",
-                    background: "white", fontSize: 12, color: "#6B6560", cursor: "pointer",
-                    fontWeight: 500, transition: "all 0.2s",
-                  }}
+                  style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid var(--c-card-border)", background: "var(--c-card)", fontSize: 12, color: "var(--c-text2)", cursor: "pointer", fontWeight: 500, transition: "all 0.2s" }}
                   onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
-                  onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)"; e.currentTarget.style.color = "#6B6560"; }}
-                >
-                  {t.copy_prompt}
-                </button>
+                  onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-card-border)"; e.currentTarget.style.color = "var(--c-text2)"; }}
+                >{t.copy_prompt}</button>
               </div>
-
-              {/* Optimized prompt */}
               <div style={{ padding: "20px 24px" }}>
-                <div style={{
-                  fontFamily: "'JetBrains Mono', monospace", fontSize: 14,
-                  lineHeight: 1.8, color: "#2D2A26", whiteSpace: "pre-wrap",
-                }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, lineHeight: 1.8, color: "var(--c-text1)", whiteSpace: "pre-wrap" }}>
                   {optimized}
                 </div>
               </div>
-
-              {/* Precision stat */}
-              <div style={{
-                padding: "12px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
-                background: "rgba(0,0,0,0.01)",
-              }}>
-                <span style={{ fontSize: 13, color: "#6B6560" }}>
+              <div style={{ padding: "12px 24px", borderTop: "1px solid var(--c-sep)", background: "var(--c-stat-bg)" }}>
+                <span style={{ fontSize: 13, color: "var(--c-text2)" }}>
                   {t.more_precise(precisionGain)}
                 </span>
               </div>
-
-              {/* What Mike fixed */}
               {fixes.length > 0 && (
-                <div style={{
-                  padding: "16px 24px 20px",
-                  borderTop: "1px solid rgba(0,0,0,0.04)",
-                  background: "rgba(255,110,64,0.02)",
-                }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#C0B8B0", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                    {t.what_fixed}
-                  </div>
+                <div style={{ padding: "16px 24px 20px", borderTop: "1px solid var(--c-sep)", background: "rgba(255,110,64,0.02)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.what_fixed}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {fixes.map((fix, i) => (
-                      <div key={i} style={{
-                        fontSize: 13, color: "#4A4540", lineHeight: 1.5,
-                        padding: "8px 12px", borderRadius: 10,
-                        background: "white", border: "1px solid rgba(0,0,0,0.04)",
-                      }}>
+                      <div key={i} style={{ fontSize: 13, color: "var(--c-prompt-text)", lineHeight: 1.5, padding: "8px 12px", borderRadius: 10, background: "var(--c-fix-bg)", border: "1px solid var(--c-fix-border)" }}>
                         {fix}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Pro tip */}
               {proTip && (
-                <div style={{
-                  padding: "14px 24px",
-                  borderTop: "1px solid rgba(0,0,0,0.04)",
-                  background: "rgba(255,183,77,0.04)",
-                }}>
+                <div style={{ padding: "14px 24px", borderTop: "1px solid var(--c-sep)", background: "var(--c-tip-bg)" }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <span style={{ fontSize: 14, lineHeight: 1.4 }}>💡</span>
-                    <span style={{ fontSize: 12, color: "#7A6A60", lineHeight: 1.6 }}>
-                      <span style={{ fontWeight: 700, color: "#E65100" }}>{t.pro_tip_label}</span>
-                      {proTip}
+                    <span style={{ fontSize: 12, color: "var(--c-text2)", lineHeight: 1.6 }}>
+                      <span style={{ fontWeight: 700, color: "#E65100" }}>{t.pro_tip_label}</span>{proTip}
                     </span>
                   </div>
                 </div>
               )}
-
-              {/* Feedback */}
-              <div style={{
-                padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,0.04)",
-                display: "flex", alignItems: "center", gap: 12,
-              }}>
+              <div style={{ padding: "14px 24px", borderTop: "1px solid var(--c-sep)", display: "flex", alignItems: "center", gap: 12 }}>
                 {feedback ? (
-                  <span style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>
-                    {t.thanks_feedback}
-                  </span>
+                  <span style={{ fontSize: 13, color: "#43A047", fontWeight: 500 }}>{t.thanks_feedback}</span>
                 ) : (
                   <>
-                    <span style={{ fontSize: 13, color: "#A09890" }}>{t.was_helpful}</span>
-                    <button
-                      onClick={() => handleFeedback("positive")}
-                      style={{
-                        padding: "6px 14px", borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.08)",
-                        background: "white", fontSize: 16, cursor: "pointer", transition: "all 0.18s",
-                      }}
-                      onMouseOver={(e) => { e.currentTarget.style.borderColor = "#43A047"; e.currentTarget.style.background = "rgba(67,160,71,0.06)"; }}
-                      onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.background = "white"; }}
-                    >👍</button>
-                    <button
-                      onClick={() => handleFeedback("negative")}
-                      style={{
-                        padding: "6px 14px", borderRadius: 10,
-                        border: "1px solid rgba(0,0,0,0.08)",
-                        background: "white", fontSize: 16, cursor: "pointer", transition: "all 0.18s",
-                      }}
-                      onMouseOver={(e) => { e.currentTarget.style.borderColor = "#E53935"; e.currentTarget.style.background = "rgba(229,57,53,0.06)"; }}
-                      onMouseOut={(e) => { e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)"; e.currentTarget.style.background = "white"; }}
-                    >👎</button>
+                    <span style={{ fontSize: 13, color: "var(--c-text3)" }}>{t.was_helpful}</span>
+                    {(["positive", "negative"] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => handleFeedback(type)}
+                        style={{ padding: "6px 14px", borderRadius: 10, border: "1px solid var(--c-chip-border)", background: "var(--c-card)", fontSize: 16, cursor: "pointer", transition: "all 0.18s" }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.borderColor = type === "positive" ? "#43A047" : "#E53935";
+                          e.currentTarget.style.background = type === "positive" ? "rgba(67,160,71,0.06)" : "rgba(229,57,53,0.06)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.borderColor = "var(--c-chip-border)";
+                          e.currentTarget.style.background = "var(--c-card)";
+                        }}
+                      >{type === "positive" ? "👍" : "👎"}</button>
+                    ))}
                   </>
                 )}
               </div>
             </div>
           )}
 
-          {/* Waitlist banner */}
+          {/* Waitlist */}
           {!emailSubmitted ? (
             <div style={{
               marginTop: 40, padding: "16px 20px", borderRadius: 14,
-              background: "white", border: "1px solid rgba(0,0,0,0.05)",
-              display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12,
-              justifyContent: "center",
+              background: "var(--c-card)", border: "1px solid var(--c-card-border)",
+              display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, justifyContent: "center",
             }}>
-              <span style={{ fontSize: 14, color: "#6B6560" }}>{t.like_mike}</span>
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  await submitWaitlist(() => setEmailSubmitted(true));
-                }}
-                style={{ display: "flex", gap: 8 }}
-              >
+              <span style={{ fontSize: 14, color: "var(--c-text2)" }}>{t.like_mike}</span>
+              <form onSubmit={async (e) => { e.preventDefault(); await submitWaitlist(() => setEmailSubmitted(true)); }} style={{ display: "flex", gap: 8 }}>
                 <input
                   type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  style={{
-                    padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)",
-                    fontSize: 13, outline: "none", width: 180, transition: "border-color 0.2s",
-                  }}
+                  style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid var(--c-input-border)", fontSize: 13, outline: "none", width: 180, background: "var(--c-input)", color: "var(--c-text1)", transition: "border-color 0.2s" }}
                   onFocus={(e) => ((e.target as HTMLInputElement).style.borderColor = "#FF8A65")}
-                  onBlur={(e) => ((e.target as HTMLInputElement).style.borderColor = "rgba(0,0,0,0.08)")}
+                  onBlur={(e) => ((e.target as HTMLInputElement).style.borderColor = "var(--c-input-border)")}
                 />
-                <button type="submit" style={{
-                  padding: "8px 16px", borderRadius: 10, border: "none",
-                  background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                  color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                }}>{t.join}</button>
+                <button type="submit" style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #FF6E40, #FF8A65)", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t.join}</button>
               </form>
             </div>
           ) : (
-            <div style={{
-              marginTop: 40, padding: "14px 24px", borderRadius: 14,
-              background: "rgba(76,175,80,0.06)", border: "1px solid rgba(76,175,80,0.12)",
-              textAlign: "center",
-            }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#2E7D32" }}>
-                {t.on_list}
-              </p>
+            <div style={{ marginTop: 40, padding: "14px 24px", borderRadius: 14, background: "var(--c-green-bg)", border: "1px solid var(--c-green-border)", textAlign: "center" }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--c-green-text)" }}>{t.on_list}</p>
             </div>
           )}
 
           {/* Footer */}
-          <footer style={{
-            marginTop: 60, paddingBottom: 24,
-            textAlign: "center", fontSize: 13, color: "#C0B8B0",
-          }}>
+          <footer style={{ marginTop: 60, paddingBottom: 24, textAlign: "center", fontSize: 13, color: "var(--c-text4)" }}>
             {t.footer}
-            <a href="mailto:hello@mikeprompt.com" style={{ color: "#C0B8B0", textDecoration: "none" }}>
-              hello@mikeprompt.com
-            </a>
+            <a href="mailto:hello@mikeprompt.com" style={{ color: "var(--c-text4)", textDecoration: "none" }}>hello@mikeprompt.com</a>
           </footer>
         </>)}
       </main>
+
       <style>{`
+        ${CSS_VARS}
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        textarea::placeholder, input::placeholder { color: #C0B8B0; }
-        select option { color: #2D2A26; }
+        textarea::placeholder, input::placeholder { color: var(--c-text4); }
+        select option { color: #2D2A26; background: white; }
+        [data-theme="dark"] select option { color: #E0DAD4; background: #2C2925; }
       `}</style>
     </div>
   );

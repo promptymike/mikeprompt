@@ -282,7 +282,7 @@ const CATEGORY_MAP_REVERSE: Record<string, string> = Object.fromEntries(
 );
 
 const TAG_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  "Any AI":  { bg: "rgba(0,0,0,0.03)",        color: "#A09890",  border: "rgba(0,0,0,0.06)" },
+  "Any AI":  { bg: "var(--c-chip-bg)",        color: "var(--c-text3)", border: "var(--c-chip-border)" },
   "ChatGPT": { bg: "rgba(16,163,127,0.06)",   color: "#0a8a69",  border: "rgba(16,163,127,0.2)" },
   "Claude":  { bg: "rgba(255,110,64,0.07)",   color: "#FF6E40",  border: "rgba(255,110,64,0.25)" },
 };
@@ -306,9 +306,9 @@ const PromptCard = ({ p, onPolish, lang = "en" }: { p: LibraryPrompt; onPolish: 
 
   return (
     <div style={{
-      background: "white", borderRadius: 14,
-      border: "1px solid rgba(0,0,0,0.06)",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.03)",
+      background: "var(--c-card)", borderRadius: 14,
+      border: "1px solid var(--c-card-border)",
+      boxShadow: "var(--c-card-sm)",
       overflow: "hidden",
       transition: "box-shadow 0.2s",
     }}>
@@ -322,7 +322,7 @@ const PromptCard = ({ p, onPolish, lang = "en" }: { p: LibraryPrompt; onPolish: 
       >
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#2D2A26" }}>{p.title}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text1)" }}>{p.title}</span>
             <span style={{
               fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500,
               background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`,
@@ -330,10 +330,10 @@ const PromptCard = ({ p, onPolish, lang = "en" }: { p: LibraryPrompt; onPolish: 
               {p.tag}
             </span>
           </div>
-          <p style={{ fontSize: 13, color: "#A09890", margin: 0 }}>{p.description}</p>
+          <p style={{ fontSize: 13, color: "var(--c-text3)", margin: 0 }}>{p.description}</p>
         </div>
         <span style={{
-          fontSize: 11, color: "#C0B8B0", marginTop: 2,
+          fontSize: 11, color: "var(--c-text4)", marginTop: 2,
           transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
           transition: "transform 0.2s", display: "inline-block", flexShrink: 0,
         }}>▼</span>
@@ -345,8 +345,8 @@ const PromptCard = ({ p, onPolish, lang = "en" }: { p: LibraryPrompt; onPolish: 
           <div style={{
             padding: "14px 18px",
             fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5,
-            lineHeight: 1.8, color: "#4A4540", whiteSpace: "pre-wrap",
-            background: "rgba(0,0,0,0.015)",
+            lineHeight: 1.8, color: "var(--c-prompt-text)", whiteSpace: "pre-wrap",
+            background: "var(--c-hover)",
           }}>
             {p.prompt}
           </div>
@@ -358,9 +358,9 @@ const PromptCard = ({ p, onPolish, lang = "en" }: { p: LibraryPrompt; onPolish: 
               onClick={copy}
               style={{
                 padding: "6px 14px", borderRadius: 8,
-                border: "1px solid rgba(0,0,0,0.07)",
-                background: copied ? "rgba(67,160,71,0.06)" : "white",
-                fontSize: 12, color: copied ? "#43A047" : "#6B6560",
+                border: "1px solid var(--c-fix-border)",
+                background: copied ? "rgba(67,160,71,0.06)" : "var(--c-fix-bg)",
+                fontSize: 12, color: copied ? "#43A047" : "var(--c-text2)",
                 cursor: "pointer", fontWeight: 500, transition: "all 0.18s",
               }}
             >
@@ -430,12 +430,12 @@ export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryPr
             padding: "10px 16px", borderRadius: 12,
             border: "1px solid rgba(0,0,0,0.08)",
             fontSize: 14, outline: "none", width: "100%",
-            fontFamily: "'DM Sans', sans-serif", color: "#2D2A26",
-            background: "white",
+            fontFamily: "'DM Sans', sans-serif", color: "var(--c-text1)",
+            background: "var(--c-input)",
             boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
           }}
           onFocus={(e) => (e.target.style.borderColor = "#FF8A65")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(0,0,0,0.08)")}
+          onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
         />
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {CATEGORIES.map((cat) => {
@@ -449,10 +449,10 @@ export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryPr
                 onClick={() => setActiveCategoryEn(catEn)}
                 style={{
                   padding: "6px 14px", borderRadius: 100,
-                  border: isActive ? "1px solid #FF8A65" : "1px solid rgba(0,0,0,0.08)",
-                  background: isActive ? "rgba(255,110,64,0.07)" : "white",
+                  border: isActive ? "1px solid #FF8A65" : "1px solid var(--c-chip-border)",
+                  background: isActive ? "rgba(255,110,64,0.07)" : "var(--c-card)",
                   fontSize: 12,
-                  color: isActive ? "#FF6E40" : "#A09890",
+                  color: isActive ? "#FF6E40" : "var(--c-text3)",
                   fontWeight: isActive ? 600 : 400,
                   cursor: "pointer", transition: "all 0.15s",
                 }}
@@ -466,7 +466,7 @@ export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryPr
 
       {/* Prompt groups */}
       {Object.keys(grouped).length === 0 ? (
-        <p style={{ textAlign: "center", color: "#C0B8B0", fontSize: 14, padding: "40px 0" }}>
+        <p style={{ textAlign: "center", color: "var(--c-text4)", fontSize: 14, padding: "40px 0" }}>
           {lang === "pl" ? "Nie znaleziono promptów." : "No prompts found."}
         </p>
       ) : (
@@ -479,12 +479,12 @@ export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryPr
                 marginBottom: 12,
               }}>
                 <span style={{ fontSize: 16 }}>{icon}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "#6B6560", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                   {lang === "pl" ? (CATEGORY_MAP[category] ?? category) : category}
                 </span>
                 <span style={{
-                  fontSize: 11, color: "#C0B8B0",
-                  background: "rgba(0,0,0,0.04)", borderRadius: 100,
+                  fontSize: 11, color: "var(--c-text4)",
+                  background: "var(--c-count-bg)", borderRadius: 100,
                   padding: "1px 8px",
                 }}>
                   {prompts.length}

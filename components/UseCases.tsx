@@ -99,7 +99,7 @@ export default function UseCases({ lang, onTryNow }: UseCasesProps) {
   return (
     <div>
       <p style={{
-        textAlign: "center", fontSize: 15, color: "#6B6560",
+        textAlign: "center", fontSize: 15, color: "var(--c-text2)",
         maxWidth: 520, margin: "0 auto 36px", lineHeight: 1.6,
       }}>
         {headerText}
@@ -108,19 +108,19 @@ export default function UseCases({ lang, onTryNow }: UseCasesProps) {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {USE_CASES.map((uc) => (
           <div key={uc.prompt} style={{
-            background: "white", borderRadius: 18,
-            border: "1px solid rgba(0,0,0,0.06)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
+            background: "var(--c-card)", borderRadius: 18,
+            border: "1px solid var(--c-card-border)",
+            boxShadow: "var(--c-card-sm)",
             overflow: "hidden",
           }}>
             {/* Card header */}
             <div style={{
               padding: "18px 24px 14px",
-              borderBottom: "1px solid rgba(0,0,0,0.04)",
+              borderBottom: "1px solid var(--c-sep)",
               display: "flex", alignItems: "center", gap: 10,
             }}>
               <span style={{ fontSize: 22 }}>{uc.icon}</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#2D2A26", letterSpacing: "-0.3px" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text1)", letterSpacing: "-0.3px" }}>
                 {lang === "pl" ? uc.titlePl : uc.titleEn}
               </span>
             </div>
@@ -141,7 +141,7 @@ export default function UseCases({ lang, onTryNow }: UseCasesProps) {
                   }}>
                     {i + 1}
                   </div>
-                  <span style={{ fontSize: 14, color: "#4A4540", lineHeight: 1.55 }}>
+                  <span style={{ fontSize: 14, color: "var(--c-prompt-text)", lineHeight: 1.55 }}>
                     {lang === "pl" ? step.pl : step.en}
                   </span>
                 </div>
@@ -151,8 +151,8 @@ export default function UseCases({ lang, onTryNow }: UseCasesProps) {
             {/* Result + CTA */}
             <div style={{
               padding: "12px 24px 16px",
-              borderTop: "1px solid rgba(0,0,0,0.04)",
-              background: "rgba(255,110,64,0.02)",
+              borderTop: "1px solid var(--c-sep)",
+              background: "var(--c-hover)",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               flexWrap: "wrap", gap: 10,
             }}>

@@ -48,7 +48,7 @@ const PRODUCT_INSTRUCTIONS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  const { prompt, role, goal, name, selectedChat, selectedProduct, lang } = await req.json();
+  const { prompt, role, goal, name, selectedChat, selectedProduct, lang, profile } = await req.json();
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     return NextResponse.json({ error: "Invalid prompt" }, { status: 400 });
@@ -74,6 +74,21 @@ export async function POST(req: NextRequest) {
   if (role) contextParts.push(`User role: ${role}`);
   if (goal) contextParts.push(`User goal: ${goal}`);
   if (name) contextParts.push(`User name: ${name}`);
+
+  // User profile context (from saved profile sidebar)
+  if (profile && typeof profile === "object") {
+    const parts: string[] = [];
+    if (profile.name && !name) parts.push(`Name: ${profile.name}`);
+    if (profile.role && !role) parts.push(`Role: ${profile.role}`);
+    if (profile.industry) parts.push(`Industry: ${profile.industry}`);
+    if (profile.usage) parts.push(`Uses AI for: ${profile.usage}`);
+    if (profile.challenge) parts.push(`Biggest challenge: ${profile.challenge}`);
+    if (profile.aiLevel) parts.push(`AI experience level: ${profile.aiLevel}`);
+    if (Array.isArray(profile.apps) && profile.apps.length > 0) parts.push(`Works in: ${profile.apps.join(", ")}`);
+    if (parts.length > 0) {
+      contextParts.push(`User profile context: ${parts.join(", ")}. Use this to make the optimized prompt more relevant to their specific situation.`);
+    }
+  }
 
   const chat = selectedChat || "ChatGPT";
   const product = selectedProduct || "General";
