@@ -413,16 +413,19 @@ const MikePromptMVP = () => {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const hash = window.location.hash;
-    if (hash.includes("access_token=")) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
+    if (!window.location.hash.includes("access_token=")) return;
+    // Wait for onAuthStateChange instead of getSession (SDK needs time to process hash)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
           window.history.replaceState(null, "", window.location.pathname);
           setAuthToast("success");
           setTimeout(() => setAuthToast(null), 4000);
+          subscription.unsubscribe();
         }
-      });
-    }
+      }
+    );
+    return () => subscription.unsubscribe();
   }, []);
 
   const toggleLang = () => {
