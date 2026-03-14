@@ -391,6 +391,26 @@ const MikePromptMVP = () => {
   const resultRef = useRef<HTMLDivElement>(null);
   const MAX_FREE = 5;
 
+  // MUST be first — registers before other onAuthStateChange listeners
+  // so the SDK emits SIGNED_IN to this handler while the hash is still in the URL
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.location.hash.includes("access_token=")) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          window.history.replaceState(null, "", window.location.pathname);
+          setAuthToast("success");
+          setTimeout(() => setAuthToast(null), 4000);
+          subscription.unsubscribe();
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     setVisible(true);
     setDailyCount(getStoredCount());
@@ -419,23 +439,6 @@ const MikePromptMVP = () => {
       const timer = setTimeout(() => setShowOnboarding(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!window.location.hash.includes("access_token=")) return;
-    // Wait for onAuthStateChange instead of getSession (SDK needs time to process hash)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          window.history.replaceState(null, "", window.location.pathname);
-          setAuthToast("success");
-          setTimeout(() => setAuthToast(null), 4000);
-          subscription.unsubscribe();
-        }
-      }
-    );
-    return () => subscription.unsubscribe();
   }, []);
 
   const toggleLang = () => {
