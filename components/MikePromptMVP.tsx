@@ -8,6 +8,7 @@ import UserProfile, { type Profile, EMPTY_PROFILE } from "./UserProfile";
 import ModelComparison from "./ModelComparison";
 import SavedPrompts from "./SavedPrompts";
 import AnonymizeTool from "./AnonymizeTool";
+import CookieBanner from "./CookieBanner";
 import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
 import { supabase, hasSupabase } from "@/lib/supabase";
 
@@ -1409,6 +1410,7 @@ const MikePromptMVP = () => {
         select option { color: #2D2A26; background: white; }
         [data-theme="dark"] select option { color: #E0DAD4; background: #2C2925; }
       `}</style>
+      <CookieBanner lang={lang} />
     </div>
   );
 };
