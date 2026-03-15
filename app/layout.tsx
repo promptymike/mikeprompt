@@ -28,6 +28,27 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "MikePrompt",
+  "url": "https://mikeprompt.com",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": "AI prompt optimizer for finance, HR, audit and sales professionals. Works with ChatGPT, Claude, Gemini and every AI.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "MikePrompt",
+    "url": "https://mikeprompt.com",
+    "email": "hello@mikeprompt.com",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,6 +56,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body>
         {children}
         <Analytics />
