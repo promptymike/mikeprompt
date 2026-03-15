@@ -9,6 +9,7 @@ import ModelComparison from "./ModelComparison";
 import SavedPrompts from "./SavedPrompts";
 import AnonymizeTool from "./AnonymizeTool";
 import CookieBanner from "./CookieBanner";
+import MikeChat from "./MikeChat";
 import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
 import { supabase, hasSupabase } from "@/lib/supabase";
 
@@ -17,6 +18,7 @@ type Lang = "en" | "pl";
 const T = {
   en: {
     tagline: "AI for humans",
+    tab_chat: "💬 Chat",
     tab_polish: "✨ Polish",
     tab_anonymize: "🔒 Anonymize",
     tab_library: "📚 Library",
@@ -73,6 +75,7 @@ const T = {
   },
   pl: {
     tagline: "AI dla ludzi",
+    tab_chat: "💬 Chat",
     tab_polish: "✨ Poleruj",
     tab_anonymize: "🔒 Anonimizuj",
     tab_library: "📚 Biblioteka",
@@ -383,7 +386,7 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "anonymize" | "library" | "usecases" | "history" | "about">("polish");
+  const [activeTab, setActiveTab] = useState<"chat" | "polish" | "anonymize" | "library" | "usecases" | "history" | "about">("chat");
   const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
@@ -602,6 +605,7 @@ const MikePromptMVP = () => {
         : "🔒 Prompts not stored · Powered by Claude · Works with every AI");
 
   const TABS = [
+    ["chat", t.tab_chat],
     ["polish", t.tab_polish],
     ["anonymize", t.tab_anonymize],
     ["library", t.tab_library],
@@ -867,7 +871,7 @@ const MikePromptMVP = () => {
               setInput(prompt); setActiveTab("polish");
               setShowResults(false); setOptimized(""); setFixes([]);
             }}
-            onNavigate={(tab) => setActiveTab(tab as "polish" | "anonymize" | "library" | "usecases" | "history" | "about")}
+            onNavigate={(tab) => setActiveTab(tab as "chat" | "polish" | "anonymize" | "library" | "usecases" | "history" | "about")}
           />
         )}
 
@@ -890,6 +894,15 @@ const MikePromptMVP = () => {
               setInput(prompt); setActiveTab("polish");
               setShowResults(false); setOptimized(""); setFixes([]);
             }}
+          />
+        )}
+
+        {/* Chat tab */}
+        {activeTab === "chat" && (
+          <MikeChat
+            lang={lang}
+            profile={profile}
+            currentUser={currentUser}
           />
         )}
 
