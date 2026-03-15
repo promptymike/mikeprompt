@@ -84,12 +84,12 @@ const T = {
     polished_today_single: "prompt wypolerowany dziś",
     free_left: "darmowych polerów",
     sign_up_more: "Zarejestruj się po więcej",
-    headline_pre: "AI, które sprawia że jesteś ",
-    headline_accent: "LEPSZY",
+    headline_pre: "Twoje maile i raporty.",
+    headline_accent: "10x lepsze",
     headline_post: ".",
-    subheadline: "To nie kolejny chatbot. Mike szlifuje Twoje prompty żeby każde AI dawało lepsze odpowiedzi.",
+    subheadline: "Koniec z poprawianiem po ChatGPT. Wklej prompt — Mike zwróci Ci profesjonalny wynik w 3 sekundy.",
     works_with: "Działa z ChatGPT · Claude · Gemini · Copilot · każdym AI",
-    stat: "Przeciętny pracownik traci 23 min/dzień na ponowne próby z AI.",
+    stat: "Oszczędź 23 minuty dziennie. Mike napisze Twój prompt za pierwszym razem.",
     try_example: "Wypróbuj przykład:",
     placeholder: "Wpisz lub wklej swój prompt tutaj…",
     optimize_for: "Optymalizuj dla:",
@@ -97,7 +97,7 @@ const T = {
     trust_badge: "",
     chars_hint: (n: number) => `${n} znaków`,
     paste_hint: "Wklej cokolwiek — Mike zajmie się resztą",
-    polish_btn: "🔧 Wypoleruj",
+    polish_btn: "🔧 Wypoleruj →",
     thinking: "Mike myśli...",
     personalise: "🎯 Personalizuj dla lepszych wyników",
     your_role: "Twoja rola",
@@ -166,14 +166,14 @@ const EXAMPLE_CHIPS = {
     { icon: "💼", label: "project update", prompt: "create project status update for stakeholders" },
   ],
   pl: [
-    { icon: "📊", label: "raport budżetowy", prompt: "napisz raport budżetowy" },
-    { icon: "📧", label: "email do dostawcy", prompt: "napisz email do dostawcy o opóźnionej dostawie" },
-    { icon: "📋", label: "agenda spotkania", prompt: "przygotuj agendę spotkania na poniedziałek" },
-    { icon: "🧮", label: "problem z fakturą", prompt: "wyjaśnij rozbieżność na fakturze klientowi" },
-    { icon: "💼", label: "ocena pracownicza", prompt: "napisz ocenę pracowniczą dla członka zespołu" },
-    { icon: "🤝", label: "cold email do CFO", prompt: "przygotuj wiadomość cold outreach do CFO" },
-    { icon: "📊", label: "koszty kwartalne", prompt: "przeanalizuj koszty kwartalne" },
-    { icon: "💼", label: "aktualizacja projektu", prompt: "utwórz aktualizację statusu projektu dla interesariuszy" },
+    { icon: "📧", label: "mail do US", prompt: "napisz mail do Urzędu Skarbowego o odroczenie terminu" },
+    { icon: "🧾", label: "opóźniona faktura", prompt: "wyjaśnij klientowi opóźnienie w wystawieniu faktury" },
+    { icon: "📋", label: "podsumowanie spotkania", prompt: "napisz podsumowanie spotkania po polsku" },
+    { icon: "📊", label: "raport miesięczny", prompt: "przygotuj raport miesięczny dla szefa" },
+    { icon: "📧", label: "reklamacja do dostawcy", prompt: "napisz reklamację do dostawcy po polsku" },
+    { icon: "💼", label: "oferta dla klienta", prompt: "przygotuj ofertę handlową dla klienta B2B" },
+    { icon: "🤝", label: "mail po angielsku", prompt: "napisz profesjonalny mail po angielsku do zagranicznego partnera" },
+    { icon: "📑", label: "wniosek urlopowy", prompt: "napisz wniosek urlopowy do przełożonego" },
   ],
 };
 
@@ -421,7 +421,16 @@ const MikePromptMVP = () => {
     setVisible(true);
     setDailyCount(getStoredCount());
     const storedLang = localStorage.getItem("mikeprompt_lang");
-    if (storedLang === "pl" || storedLang === "en") setLang(storedLang);
+    if (storedLang === "pl" || storedLang === "en") {
+      setLang(storedLang);
+    } else {
+      // Fall back to cookie set by middleware (geo-detection)
+      const cookieLang = document.cookie
+        .split("; ")
+        .find((r) => r.startsWith("mikeprompt_lang="))
+        ?.split("=")[1];
+      if (cookieLang === "pl" || cookieLang === "en") setLang(cookieLang);
+    }
     const storedDark = localStorage.getItem("mikeprompt_dark");
     if (storedDark === "1") setDark(true);
     const storedProfile = loadProfile();
@@ -457,7 +466,11 @@ const MikePromptMVP = () => {
   const toggleLang = () => {
     const next: Lang = lang === "en" ? "pl" : "en";
     setLang(next);
+    // Save choice + mark as manual so geo-detection doesn't override on next visit
     localStorage.setItem("mikeprompt_lang", next);
+    localStorage.setItem("mikeprompt_lang_manual", "1");
+    // Also update the cookie so middleware sees the manual choice
+    document.cookie = `mikeprompt_lang=${next};max-age=86400;path=/;samesite=lax`;
   };
 
   const toggleDark = () => {
@@ -973,46 +986,8 @@ const MikePromptMVP = () => {
               />
             </div>
 
-            {/* Selectors */}
+            {/* Selectors — Output only (AI selector moved into Personalise) */}
             <div style={{ padding: "12px 24px", borderTop: "1px solid var(--c-sep)", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 600, minWidth: 90 }}>{t.optimize_for}</span>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {Object.entries(TOOL_DESCRIPTIONS).map(([chat, desc]) => {
-                    const isSelected = selectedChat === chat;
-                    const isRecommended = recommendation?.bestTool === chat && selectedChat !== chat;
-                    return (
-                      <button
-                        key={chat}
-                        onClick={() => setSelectedChat(chat)}
-                        style={{
-                          padding: "5px 12px 5px 10px", borderRadius: 10,
-                          border: isSelected ? "1px solid #FF8A65" : isRecommended ? "1px solid rgba(66,133,244,0.4)" : "1px solid var(--c-chip-border)",
-                          background: isSelected ? "rgba(255,110,64,0.07)" : isRecommended ? "rgba(66,133,244,0.05)" : "var(--c-card)",
-                          fontSize: 12, textAlign: "left",
-                          color: isSelected ? "#FF6E40" : "var(--c-text3)",
-                          fontWeight: isSelected ? 600 : 400,
-                          cursor: "pointer", transition: "all 0.15s",
-                          position: "relative",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <span style={{ fontSize: 11 }}>{desc.icon}</span>
-                          <span>{chat}</span>
-                          {isRecommended && (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: "#4285F4", background: "rgba(66,133,244,0.12)", borderRadius: 100, padding: "1px 5px", marginLeft: 2 }}>
-                              ✨
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 10, color: isSelected ? "rgba(255,110,64,0.7)" : "var(--c-text4)", marginTop: 1, fontWeight: 400 }}>
-                          {lang === "pl" ? desc.pl : desc.en}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 600, minWidth: 90 }}>{t.output_for}</span>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1083,13 +1058,12 @@ const MikePromptMVP = () => {
                   padding: isMobile ? "13px" : "11px 26px", borderRadius: 12, border: "none",
                   background: loading
                     ? "linear-gradient(135deg, #FFAB91, #FFCCBC)"
-                    : input.trim()
-                    ? "linear-gradient(135deg, #FF6E40, #FF8A65)"
-                    : "var(--c-count-bg)",
-                  color: input.trim() ? "white" : "var(--c-text4)",
+                    : "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                  color: "white",
                   fontSize: 15, fontWeight: 600,
-                  cursor: input.trim() ? "pointer" : "default",
-                  boxShadow: input.trim() ? "0 4px 16px rgba(255,110,64,0.3)" : "none",
+                  cursor: input.trim() && !loading ? "pointer" : "default",
+                  boxShadow: "0 4px 16px rgba(255,110,64,0.3)",
+                  opacity: loading ? 0.8 : 1,
                   transition: "all 0.3s",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
@@ -1126,7 +1100,45 @@ const MikePromptMVP = () => {
                 }}>▼</span>
               </button>
               {contextOpen && (
-                <div style={{ padding: "4px 24px 20px", display: "flex", flexWrap: "wrap", gap: 12, animation: "fadeUp 0.2s ease" }}>
+                <div style={{ padding: "4px 24px 20px", display: "flex", flexDirection: "column", gap: 16, animation: "fadeUp 0.2s ease" }}>
+                  {/* AI tool selector (moved here from top) */}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 600, minWidth: 90, paddingTop: 6 }}>{t.optimize_for}</span>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {Object.entries(TOOL_DESCRIPTIONS).map(([chat, desc]) => {
+                        const isSelected = selectedChat === chat;
+                        const isRecommended = recommendation?.bestTool === chat && selectedChat !== chat;
+                        return (
+                          <button
+                            key={chat}
+                            onClick={() => setSelectedChat(chat)}
+                            style={{
+                              padding: "5px 12px 5px 10px", borderRadius: 10,
+                              border: isSelected ? "1px solid #FF8A65" : isRecommended ? "1px solid rgba(66,133,244,0.4)" : "1px solid var(--c-chip-border)",
+                              background: isSelected ? "rgba(255,110,64,0.07)" : isRecommended ? "rgba(66,133,244,0.05)" : "var(--c-card)",
+                              fontSize: 12, textAlign: "left",
+                              color: isSelected ? "#FF6E40" : "var(--c-text3)",
+                              fontWeight: isSelected ? 600 : 400,
+                              cursor: "pointer", transition: "all 0.15s",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontSize: 11 }}>{desc.icon}</span>
+                              <span>{chat}</span>
+                              {isRecommended && (
+                                <span style={{ fontSize: 9, fontWeight: 700, color: "#4285F4", background: "rgba(66,133,244,0.12)", borderRadius: 100, padding: "1px 5px", marginLeft: 2 }}>✨</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 10, color: isSelected ? "rgba(255,110,64,0.7)" : "var(--c-text4)", marginTop: 1, fontWeight: 400 }}>
+                              {lang === "pl" ? desc.pl : desc.en}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {/* Role / Goal / Name */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: "1 1 160px" }}>
                     <label style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text4)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{t.your_role}</label>
                     <select
@@ -1173,6 +1185,7 @@ const MikePromptMVP = () => {
                       onBlur={(e) => (e.target.style.borderColor = "var(--c-input-border)")}
                     />
                   </div>
+                  </div>{/* end role/goal/name row */}
                 </div>
               )}
             </div>
