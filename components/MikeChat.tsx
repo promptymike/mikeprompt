@@ -6,18 +6,29 @@ import { anonymizeText } from "@/lib/anonymize";
 
 type Lang = "pl" | "en";
 
+interface SavedPromptItem {
+  id: string;
+  original: string;
+  optimized: string;
+  category: string;
+  savedAt: string;
+  usageCount: number;
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant" | "thinking";
   content: string;
   timestamp: Date;
-  maskCount?: number; // > 0 means anonymize was applied
+  maskCount?: number;
 }
 
 interface Props {
   lang: Lang;
   profile: Profile;
   currentUser: { id: string; email?: string } | null;
+  initialMessage?: string;
+  onInitialMessageConsumed?: () => void;
 }
 
 const T = {
@@ -25,46 +36,49 @@ const T = {
     headline: "Hi! I'm Mike.",
     subline: "Your AI office assistant. Tell me what to write — email, letter, report.",
     thinking: "Mike is thinking...",
-    copy: "📋 Copy",
-    copied: "✓ Copied!",
+    copy: "Copy",
+    copied: "Copied!",
     placeholder: "Type a message…",
-    or_write: "or just write what you need ↓",
-    privacy_off: "🔒 Privacy: data is NOT masked — click to enable protection",
-    privacy_on: "🛡️ Privacy active: tax IDs, amounts masked locally before AI",
-    masked_badge: (n: number) => `🔒 ${n} item${n === 1 ? "" : "s"} masked before sending`,
-    paywall_title: "⏰ Mike gave it his all today.",
+    or_write: "or just write what you need",
+    privacy_off: "Privacy: data is NOT masked — click to enable protection",
+    privacy_on: "Privacy active: tax IDs, amounts masked locally before AI",
+    masked_badge: (n: number) => `${n} item${n === 1 ? "" : "s"} masked before sending`,
+    paywall_title: "Mike gave it his all today.",
     paywall_body: "You've used your 15 free messages.\nCome back tomorrow — or work with Mike without limits.",
-    paywall_btn: "🚀 Unlock Pro for 10 PLN/month",
+    paywall_btn: "Unlock Pro for 10 PLN/month",
+    prompts_btn: "Prompts",
+    prompts_header: "My saved prompts",
+    prompts_empty: "No saved prompts yet. Polish something in the Polish tab.",
     workflows: [
       {
-        icon: "📄",
+        label: "Demand",
         title: "Payment demand letter",
-        description: "Per Art. 476 Civil Code — with 11.25% interest and 14-day deadline",
-        prompt: "Write a payment demand letter. I need: amount owed, due date, debtor name (you can use [DEBTOR NAME] for anonymity). The letter should cite Art. 476 Civil Code, include statutory interest for delay (11.25% per annum) and a 14-day payment deadline. Creditor details: [COMPANY NAME], tax ID: [TAX ID].",
+        description: "Per Art. 476 Civil Code — with statutory interest and 14-day deadline",
+        prompt: "Payment demand letter — tell me the amount owed and how long it has been overdue. I'll handle the rest.",
       },
       {
-        icon: "🏛️",
-        title: "Reply to ZUS / tax authority",
+        label: "ZUS / Tax",
+        title: "Reply to tax authority / ZUS",
         description: "Formal letter with proper structure and legal references",
-        prompt: "Help me write a reply to a summons from ZUS or the Tax Authority. Describe the case: what the summons concerns and what you want to explain or contest. I will prepare a letter with proper structure, date, sender details and reference to the relevant regulations.",
+        prompt: "Reply to ZUS or tax authority — describe in one sentence what the letter is about and what you want to explain or contest.",
       },
       {
-        icon: "📊",
+        label: "JPK",
         title: "JPK discrepancy explanation",
         description: "Letter to Tax Office explaining JPK_V7 differences",
-        prompt: "Write a letter explaining discrepancies in JPK_V7. Tell me: which period, what the discrepancy is and what caused it. I can use [PLACEHOLDER] for confidential data. I will prepare a formal letter to the Tax Office.",
+        prompt: "JPK discrepancy explanation — which period and what exactly does not match? Describe the situation.",
       },
       {
-        icon: "📋",
-        title: "Internal procedure / instruction",
-        description: "Step-by-step guide for staff — invoices, expenses, requests",
-        prompt: "Write an internal procedure for employees. Topic: [describe — e.g. how to properly describe cost invoices, how to settle business travel expenses, how to submit leave requests]. The procedure should be simple, step-by-step, understandable for someone without accounting knowledge. Format: numbered steps with examples.",
+        label: "Procedure",
+        title: "Internal procedure for staff",
+        description: "Step-by-step guide — invoices, expenses, leave requests",
+        prompt: "Internal procedure for staff — what topic? For example: describing cost invoices, settling business travel, submitting leave requests. Tell me the topic in one sentence.",
       },
       {
-        icon: "📧",
+        label: "Email",
         title: "Missing documents email",
         description: "Polite but direct email listing missing documents",
-        prompt: "Write an email to a client or employee about missing documents. Provide: which documents are missing and what the submission deadline is. If you want — add consequences of missing the deadline. Tone: polite but direct.",
+        prompt: "Missing documents email — which documents are missing and who should deliver them? Give me those two things.",
       },
     ],
   },
@@ -72,46 +86,49 @@ const T = {
     headline: "Cześć! Jestem Mike.",
     subline: "Twój asystent biurowy AI. Powiedz mi co napisać — maila, pismo, raport.",
     thinking: "Mike przygotowuje odpowiedź...",
-    copy: "📋 Kopiuj",
-    copied: "✓ Skopiowano!",
+    copy: "Kopiuj",
+    copied: "Skopiowano!",
     placeholder: "Napisz wiadomość…",
-    or_write: "lub napisz wprost co potrzebujesz ↓",
-    privacy_off: "🔒 Prywatność: dane NIE są maskowane — kliknij aby włączyć ochronę",
-    privacy_on: "🛡️ Prywatność aktywna: NIP, PESEL i kwoty są maskowane lokalnie",
-    masked_badge: (n: number) => `🔒 ${n} ${n === 1 ? "dana zamaskowana" : n < 5 ? "dane zamaskowane" : "danych zamaskowanych"} przed wysłaniem`,
-    paywall_title: "⏰ Mike dał z siebie wszystko na dziś.",
+    or_write: "lub napisz wprost co potrzebujesz",
+    privacy_off: "Prywatność: dane NIE są maskowane — kliknij aby włączyć ochronę",
+    privacy_on: "Prywatność aktywna: NIP, PESEL i kwoty są maskowane lokalnie",
+    masked_badge: (n: number) => `${n} ${n === 1 ? "dana zamaskowana" : n < 5 ? "dane zamaskowane" : "danych zamaskowanych"} przed wysłaniem`,
+    paywall_title: "Mike dał z siebie wszystko na dziś.",
     paywall_body: "Wykorzystałeś 15 darmowych wiadomości.\nWróć jutro — lub pracuj z Mike'iem bez limitów.",
-    paywall_btn: "🚀 Odblokuj Pro za 10 zł/mc",
+    paywall_btn: "Odblokuj Pro za 10 zł/mc",
+    prompts_btn: "Prompty",
+    prompts_header: "Moje zapisane prompty",
+    prompts_empty: "Nie masz jeszcze zapisanych promptów. Wypoleruj coś w zakładce Poleruj.",
     workflows: [
       {
-        icon: "📄",
+        label: "Wezwanie",
         title: "Wezwanie do zapłaty",
-        description: "Zgodne z art. 476 KC — z odsetkami 11.25% i terminem 14 dni",
-        prompt: "Napisz wezwanie do zapłaty. Potrzebuję: kwota należności, data wymagalności, nazwa dłużnika (możesz użyć [NAZWA DŁUŻNIKA] dla anonimowości). Wezwanie ma być zgodne z art. 476 KC, zawierać naliczone odsetki ustawowe za opóźnienie (11.25% rocznie) i 14-dniowy termin zapłaty. Dane wierzyciela: [NAZWA FIRMY], NIP: [NIP].",
+        description: "Zgodne z art. 476 KC — z odsetkami ustawowymi i terminem 14 dni",
+        prompt: "Wezwanie do zapłaty — podaj mi kwotę należności i od kiedy jest przeterminowana. Resztę uzupełnię sam.",
       },
       {
-        icon: "🏛️",
+        label: "ZUS / US",
         title: "Odpowiedź na wezwanie ZUS / US",
-        description: "Formalne pismo z właściwą strukturą i przepisami",
-        prompt: "Pomóż mi napisać odpowiedź na wezwanie z ZUS lub Urzędu Skarbowego. Opisz sprawę: czego dotyczy wezwanie i co chcesz wyjaśnić lub zakwestionować. Przygotuję pismo z właściwą strukturą, datą, danymi nadawcy i powołaniem na właściwe przepisy.",
+        description: "Formalne pismo urzędowe z właściwą strukturą i powołaniem na przepisy",
+        prompt: "Odpowiedź na wezwanie ZUS lub US — opisz mi w jednym zdaniu czego dotyczy pismo i co chcesz wyjaśnić lub zakwestionować.",
       },
       {
-        icon: "📊",
+        label: "JPK",
         title: "Wyjaśnienie rozbieżności w JPK",
-        description: "Pismo do US wyjaśniające różnice w pliku JPK_V7",
-        prompt: "Napisz pismo wyjaśniające rozbieżności w JPK_V7. Powiedz mi: za jaki okres, jaka jest rozbieżność i jaka jest jej przyczyna. Mogę użyć [PLACEHOLDER] dla danych poufnych. Przygotuję formalne pismo do Urzędu Skarbowego.",
+        description: "Pismo do urzędu skarbowego wyjaśniające różnice w pliku JPK_V7",
+        prompt: "Wyjaśnienie rozbieżności w JPK — za jaki okres i co konkretnie się nie zgadza? Opisz mi sytuację.",
       },
       {
-        icon: "📋",
-        title: "Instrukcja / procedura wewnętrzna",
-        description: "Instrukcja dla pracowników — opis faktur, rozliczenia, procedury",
-        prompt: "Napisz instrukcję wewnętrzną dla pracowników. Temat instrukcji: [opisz — np. jak prawidłowo opisywać faktury kosztowe, jak rozliczać delegacje, jak składać wnioski urlopowe]. Instrukcja powinna być prosta, krok po kroku, zrozumiała dla osoby bez wiedzy księgowej. Format: ponumerowane kroki z przykładami.",
+        label: "Instrukcja",
+        title: "Instrukcja wewnętrzna dla pracowników",
+        description: "Procedura krok po kroku — np. opisywanie faktur, wnioski urlopowe, delegacje",
+        prompt: "Instrukcja dla pracowników — jaki temat? Na przykład: opisywanie faktur kosztowych, rozliczanie delegacji, składanie wniosków urlopowych. Napisz mi temat w jednym zdaniu.",
       },
       {
-        icon: "📧",
+        label: "Mail",
         title: "Mail o brakach w dokumentach",
-        description: "Uprzejmy ale konkretny mail z listą brakujących dokumentów",
-        prompt: "Napisz mail do klienta lub pracownika o brakujących dokumentach. Podaj: jakich dokumentów brakuje i jaki jest termin ich dostarczenia. Jeśli chcesz — dodaj konsekwencje braku dokumentów. Ton: uprzejmy ale konkretny.",
+        description: "Uprzejmy ale konkretny mail do klienta z listą brakujących dokumentów",
+        prompt: "Mail o brakujących dokumentach — jakich dokumentów brakuje i kto ma je dostarczyć? Podaj mi te dwie rzeczy.",
       },
     ],
   },
@@ -119,7 +136,7 @@ const T = {
 
 const todayKey = () => `mikeprompt_chat_count_${new Date().toISOString().slice(0, 10)}`;
 
-export default function MikeChat({ lang, profile, currentUser }: Props) {
+export default function MikeChat({ lang, profile, currentUser, initialMessage, onInitialMessageConsumed }: Props) {
   const t = T[lang];
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -128,17 +145,49 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
   const [anonymize, setAnonymize] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState(0);
+  const [promptsOpen, setPromptsOpen] = useState(false);
+  const [savedPrompts, setSavedPrompts] = useState<SavedPromptItem[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const promptsPopoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const count = parseInt(localStorage.getItem(todayKey()) ?? "0", 10);
     setUsageCount(count);
   }, []);
 
+  // Load saved prompts when popover opens
+  useEffect(() => {
+    if (promptsOpen) {
+      const saved = JSON.parse(localStorage.getItem("mikeprompt_saved_prompts") ?? "[]") as SavedPromptItem[];
+      setSavedPrompts(saved);
+    }
+  }, [promptsOpen]);
+
+  // Handle initialMessage from MyPrompts
+  useEffect(() => {
+    if (initialMessage) {
+      setInput(initialMessage);
+      setTimeout(() => textareaRef.current?.focus(), 50);
+      onInitialMessageConsumed?.();
+    }
+  }, [initialMessage, onInitialMessageConsumed]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Close prompts popover on outside click
+  useEffect(() => {
+    if (!promptsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (promptsPopoverRef.current && !promptsPopoverRef.current.contains(e.target as Node)) {
+        setPromptsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [promptsOpen]);
 
   const resizeTextarea = () => {
     const el = textareaRef.current;
@@ -152,7 +201,6 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
       const rawText = (overrideInput ?? input).trim();
       if (!rawText || isStreaming || usageCount >= 15) return;
 
-      // Client-side anonymization for badge count
       let textToSend = rawText;
       let maskCount = 0;
       if (anonymize) {
@@ -164,7 +212,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
-        content: rawText, // always show original text to user
+        content: rawText,
         timestamp: new Date(),
         maskCount: maskCount > 0 ? maskCount : undefined,
       };
@@ -172,7 +220,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
       setMessages(newMessages);
       setInput("");
       if (textareaRef.current) {
-        textareaRef.current.style.height = "44px";
+        textareaRef.current.style.height = "52px";
       }
 
       const newCount = usageCount + 1;
@@ -191,7 +239,6 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
       let firstChunk = true;
       const assistantId = `assistant-${Date.now()}`;
 
-      // Build messages for API — replace last user message content with anonymized version
       const apiMessages = newMessages.map((m, i) =>
         i === newMessages.length - 1 && m.role === "user"
           ? { role: m.role, content: textToSend }
@@ -211,7 +258,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
             messages: apiMessages,
             profile: profileObj,
             lang,
-            anonymize: false, // already anonymized client-side
+            anonymize: false,
           }),
         });
 
@@ -268,10 +315,26 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleUsePrompt = (item: SavedPromptItem) => {
+    // Increment usage count
+    const saved = JSON.parse(localStorage.getItem("mikeprompt_saved_prompts") ?? "[]") as SavedPromptItem[];
+    const updated = saved.map((p) => p.id === item.id ? { ...p, usageCount: p.usageCount + 1 } : p);
+    localStorage.setItem("mikeprompt_saved_prompts", JSON.stringify(updated));
+
+    setInput(item.optimized);
+    setPromptsOpen(false);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
   const atLimit = usageCount >= 15;
+
+  // suppress unused warning
+  void currentUser;
+  void isThinking;
 
   return (
     <div
+      className="mike-chat-root"
       style={{
         height: "calc(100vh - 60px)",
         display: "flex",
@@ -305,7 +368,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           padding: 14px 18px;
           display: flex;
           align-items: flex-start;
-          gap: 12px;
+          gap: 14px;
           font-size: 14px;
           color: var(--c-text1);
           cursor: pointer;
@@ -315,10 +378,11 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           width: 100%;
         }
         .mike-workflow-card:hover {
-          border-color: #FF8A65;
-          background: rgba(255,110,64,0.04);
+          border-color: rgba(255,110,64,0.4);
+          box-shadow: var(--c-card-shadow);
         }
         .mike-textarea:focus { border-color: #FF8A65 !important; outline: none; }
+        .mike-prompts-item:hover { background: var(--c-hover); }
         @media (max-width: 767px) {
           .mike-chat-root { height: calc(100vh - 56px) !important; }
           .mike-messages { padding: 16px !important; }
@@ -385,19 +449,19 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
             </p>
 
             {/* Workflow cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 480 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 560 }}>
               {t.workflows.map((wf) => (
                 <button key={wf.title} className="mike-workflow-card" onClick={() => handleWorkflow(wf.prompt)}>
-                  <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{wf.icon}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text3)", flexShrink: 0, minWidth: 64, paddingTop: 1 }}>{wf.label}</span>
                   <div style={{ textAlign: "left" }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{wf.title}</div>
+                    <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 3 }}>{wf.title}</div>
                     <div style={{ fontSize: 12, color: "var(--c-text3)", lineHeight: 1.5 }}>{wf.description}</div>
                   </div>
                 </button>
               ))}
             </div>
 
-            <p style={{ fontSize: 12, color: "var(--c-text4)", textAlign: "center", marginTop: 12 }}>
+            <p style={{ fontSize: 12, color: "var(--c-text4)", textAlign: "center", marginTop: 8 }}>
               {t.or_write}
             </p>
           </div>
@@ -491,6 +555,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
                   cursor: "pointer",
                   color: copiedId === msg.id ? "#2E7D32" : "var(--c-text3)",
                   transition: "color 0.15s",
+                  fontFamily: "inherit",
                 }}
               >
                 {copiedId === msg.id ? t.copied : t.copy}
@@ -569,7 +634,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
             </a>
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end", position: "relative" }}>
             <textarea
               ref={textareaRef}
               className="mike-textarea"
@@ -583,6 +648,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
                   e.preventDefault();
                   sendMessage();
                 }
+                if (e.key === "Escape") setPromptsOpen(false);
               }}
               placeholder={t.placeholder}
               rows={1}
@@ -604,6 +670,85 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
                 transition: "border-color 0.15s",
               }}
             />
+
+            {/* Prompts button + popover */}
+            <div ref={promptsPopoverRef} style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setPromptsOpen((v) => !v)}
+                style={{
+                  height: 46,
+                  padding: "0 12px",
+                  borderRadius: 8,
+                  border: "1px solid var(--c-card-border)",
+                  background: "var(--c-card)",
+                  color: "var(--c-text3)",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t.prompts_btn}
+              </button>
+
+              {promptsOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "calc(100% + 8px)",
+                    right: 0,
+                    width: 320,
+                    maxHeight: 340,
+                    overflowY: "auto",
+                    background: "var(--c-card)",
+                    borderRadius: 14,
+                    border: "1px solid var(--c-card-border)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+                    zIndex: 50,
+                    padding: "12px 0",
+                  }}
+                >
+                  <div style={{ padding: "0 12px 8px", fontSize: 12, fontWeight: 700, color: "var(--c-text2)", borderBottom: "1px solid var(--c-sep)", marginBottom: 4 }}>
+                    {t.prompts_header}
+                  </div>
+                  {savedPrompts.length === 0 ? (
+                    <div style={{ padding: "12px", fontSize: 12, color: "var(--c-text4)", lineHeight: 1.5 }}>
+                      {t.prompts_empty}
+                    </div>
+                  ) : (
+                    savedPrompts.map((item) => (
+                      <button
+                        key={item.id}
+                        className="mike-prompts-item"
+                        onClick={() => handleUsePrompt(item)}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          margin: "2px 4px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, color: "#FF6E40", background: "rgba(255,110,64,0.08)", borderRadius: 100, padding: "2px 8px", textTransform: "uppercase" }}>
+                            {item.category}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--c-text1)", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
+                          {item.optimized.slice(0, 60)}{item.optimized.length > 60 ? "…" : ""}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isStreaming}
@@ -631,9 +776,6 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           </div>
         )}
       </div>
-
-      {/* currentUser available for future auth-gating */}
-      {void currentUser}
     </div>
   );
 }

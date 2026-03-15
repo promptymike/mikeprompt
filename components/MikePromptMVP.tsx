@@ -10,10 +10,20 @@ import SavedPrompts from "./SavedPrompts";
 import AnonymizeTool from "./AnonymizeTool";
 import CookieBanner from "./CookieBanner";
 import MikeChat from "./MikeChat";
+import MyPrompts from "./MyPrompts";
 import { loadProfile, saveProfile as persistProfile } from "@/lib/profile";
 import { supabase, hasSupabase } from "@/lib/supabase";
 
 type Lang = "en" | "pl";
+
+interface SavedPromptItem {
+  id: string;
+  original: string;
+  optimized: string;
+  category: string;
+  savedAt: string;
+  usageCount: number;
+}
 
 const T = {
   en: {
@@ -384,11 +394,14 @@ const MikePromptMVP = () => {
   const [userName, setUserName] = useState("");
   const [dailyCount, setDailyCount] = useState(0);
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveToast, setSaveToast] = useState<string | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"chat" | "polish" | "anonymize" | "library" | "history">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "polish" | "anonymize" | "library" | "myprompts" | "history">("chat");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatUsageCount, setChatUsageCount] = useState(0);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>(undefined);
   const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
@@ -563,6 +576,44 @@ const MikePromptMVP = () => {
 
   const copyText = (text: string) => navigator.clipboard.writeText(text);
 
+  const savePromptToLibrary = async () => {
+    if (!optimized || saveState !== "idle") return;
+    setSaveState("saving");
+    try {
+      const apiKey = ""; // categorization done via /api/chat proxy — use direct fetch here
+      let category = "inne";
+      try {
+        const catResp = await fetch("/api/categorize-prompt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: optimized }),
+        });
+        if (catResp.ok) {
+          const d = await catResp.json() as { category?: string };
+          if (d.category) category = d.category;
+        }
+      } catch { /* use default category */ }
+
+      const saved = JSON.parse(localStorage.getItem("mikeprompt_saved_prompts") ?? "[]") as SavedPromptItem[];
+      const newItem: SavedPromptItem = {
+        id: Date.now().toString(),
+        original: input,
+        optimized,
+        category,
+        savedAt: new Date().toISOString(),
+        usageCount: 0,
+      };
+      const updated = [newItem, ...saved].slice(0, 50);
+      localStorage.setItem("mikeprompt_saved_prompts", JSON.stringify(updated));
+
+      setSaveState("saved");
+      setSaveToast(lang === "pl" ? `Zapisano w kategorii: ${category}` : `Saved to category: ${category}`);
+      setTimeout(() => { setSaveState("idle"); setSaveToast(null); }, 2500);
+    } catch {
+      setSaveState("idle");
+    }
+  };
+
   const handleFeedback = (type: "positive" | "negative") => {
     setFeedback(type);
     console.log({ timestamp: new Date().toISOString(), original_prompt: input, optimized_prompt: optimized, feedback: type });
@@ -717,6 +768,7 @@ const MikePromptMVP = () => {
           {([ ["polish", "⚡", lang === "pl" ? "Poleruj prompt" : "Polish Prompt"],
               ["anonymize", "🔒", lang === "pl" ? "Anonimizuj" : "Anonymize"],
               ["library", "📚", lang === "pl" ? "Szablony" : "Templates"],
+              ["myprompts", "⭐", lang === "pl" ? "Moje prompty" : "My Prompts"],
               ["history", "📂", lang === "pl" ? "Historia" : "History"],
           ] as const).map(([tab, icon, label]) => (
             <button
@@ -877,6 +929,28 @@ const MikePromptMVP = () => {
         </div>
       )}
 
+      {/* Save prompt toast */}
+      {saveToast && (
+        <div style={{
+          position: "fixed",
+          bottom: isMobile ? 80 : 24,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "var(--c-green-bg)",
+          border: "1px solid var(--c-green-border)",
+          borderRadius: 12,
+          padding: "10px 16px",
+          fontSize: 13,
+          color: "#2E7D32",
+          fontWeight: 500,
+          zIndex: 300,
+          whiteSpace: "nowrap",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+        }}>
+          {saveToast}
+        </div>
+      )}
+
       {/* Auth success toast */}
       {authToast === "success" && (
         <div style={{
@@ -913,6 +987,8 @@ const MikePromptMVP = () => {
             lang={lang}
             profile={profile}
             currentUser={currentUser}
+            initialMessage={chatInitialMessage}
+            onInitialMessageConsumed={() => setChatInitialMessage(undefined)}
           />
         )}
 
@@ -933,7 +1009,7 @@ const MikePromptMVP = () => {
                   setInput(prompt); setActiveTab("polish");
                   setShowResults(false); setOptimized(""); setFixes([]);
                 }}
-                onNavigate={(tab) => setActiveTab(tab as "chat" | "polish" | "anonymize" | "library" | "history")}
+                onNavigate={(tab) => setActiveTab(tab as "chat" | "polish" | "anonymize" | "library" | "myprompts" | "history")}
               />
             )}
 
@@ -962,42 +1038,29 @@ const MikePromptMVP = () => {
               </>
             )}
 
+            {/* My Prompts tab */}
+            {activeTab === "myprompts" && (
+              <MyPrompts
+                lang={lang}
+                onSendToChat={(prompt) => {
+                  setActiveTab("chat");
+                  setChatInitialMessage(prompt);
+                }}
+              />
+            )}
+
         {/* Polish tab */}
         {activeTab === "polish" && (<>
-          {/* Hero */}
-          <div style={{
-            textAlign: "center", marginBottom: 16,
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(20px)",
-            transition: "all 0.8s ease 0.2s",
-          }}>
-            <h1 style={{
-              fontFamily: "'Fraunces', serif",
-              fontSize: isMobile ? "clamp(28px, 8vw, 40px)" : "clamp(34px, 6vw, 56px)",
-              fontWeight: 700, lineHeight: 1.1, marginBottom: 16, letterSpacing: "-1.5px",
-              color: "var(--c-text1)",
-            }}>
-              {t.headline_pre}
-              <span style={{ background: "linear-gradient(135deg, #FF6E40, #FF8A65)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                {t.headline_accent}
-              </span>
-              {t.headline_post}
-            </h1>
-            <p style={{ fontSize: 17, color: "var(--c-text2)", maxWidth: 480, margin: "0 auto 12px", lineHeight: 1.6 }}>
-              {t.subheadline}
-            </p>
-            <p style={{ fontSize: 13, color: "var(--c-text3)", marginBottom: 8 }}>{t.works_with}</p>
-            <p style={{ fontSize: 12, color: "var(--c-text5)", fontStyle: "italic" }}>{t.stat}</p>
-          </div>
+          {/* Hint text */}
+          <p style={{ fontSize: 13, color: "var(--c-text3)", marginBottom: 12 }}>
+            {lang === "pl"
+              ? "Wpisz zapytanie — Mike je wypoleruje i możesz zapisać jako swój gotowiec"
+              : "Write a request — Mike polishes it and you can save it as your template"}
+          </p>
 
           {/* Example chips */}
           <div style={{ marginBottom: 28, opacity: visible ? 1 : 0, transition: "all 0.8s ease 0.35s" }}>
-            <p style={{
-              fontSize: 12, fontWeight: 600, color: "var(--c-text4)",
-              textTransform: "uppercase", letterSpacing: "0.6px",
-              marginBottom: 10, textAlign: "center",
-            }}>{t.try_example}</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {EXAMPLE_CHIPS[lang].map((chip) => (
                 <button
                   key={chip.prompt}
@@ -1330,12 +1393,23 @@ const MikePromptMVP = () => {
                     {getFunMessage(input, lang)}
                   </span>
                 </div>
-                <button
-                  onClick={() => copyText(optimized)}
-                  style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid var(--c-card-border)", background: "var(--c-card)", fontSize: 12, color: "var(--c-text2)", cursor: "pointer", fontWeight: 500, transition: "all 0.2s" }}
-                  onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
-                  onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-card-border)"; e.currentTarget.style.color = "var(--c-text2)"; }}
-                >{t.copy_prompt}</button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    onClick={() => copyText(optimized)}
+                    style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid var(--c-card-border)", background: "var(--c-card)", fontSize: 12, color: "var(--c-text2)", cursor: "pointer", fontWeight: 500, transition: "all 0.2s" }}
+                    onMouseOver={(e) => { e.currentTarget.style.borderColor = "#FF8A65"; e.currentTarget.style.color = "#FF6E40"; }}
+                    onMouseOut={(e) => { e.currentTarget.style.borderColor = "var(--c-card-border)"; e.currentTarget.style.color = "var(--c-text2)"; }}
+                  >{t.copy_prompt}</button>
+                  <button
+                    onClick={savePromptToLibrary}
+                    disabled={saveState === "saving"}
+                    style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid var(--c-card-border)", background: "var(--c-card)", fontSize: 12, fontWeight: 500, cursor: saveState === "saving" ? "default" : "pointer", color: saveState === "saved" ? "#2E7D32" : "var(--c-text2)", transition: "all 0.2s" }}
+                  >
+                    {saveState === "saved"
+                      ? (lang === "pl" ? "Zapisano" : "Saved")
+                      : (lang === "pl" ? "Zapisz do moich promptów" : "Save to my prompts")}
+                  </button>
+                </div>
               </div>
 
               {/* Prompt text */}
