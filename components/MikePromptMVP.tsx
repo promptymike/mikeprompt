@@ -615,7 +615,8 @@ const MikePromptMVP = () => {
     <div
       data-theme={dark ? "dark" : "light"}
       style={{
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         display: "flex",
         background: "var(--c-page-bg)",
         fontFamily: "'DM Sans', sans-serif",
@@ -782,7 +783,7 @@ const MikePromptMVP = () => {
       </aside>
 
       {/* Content area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
 
         {/* Mobile header */}
         {isMobile && (

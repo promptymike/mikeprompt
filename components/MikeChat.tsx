@@ -273,9 +273,11 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
   return (
     <div
       style={{
-        minHeight: "calc(100vh - 280px)",
+        height: "calc(100vh - 60px)",
         display: "flex",
         flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
         background: "var(--c-bg)",
       }}
     >
@@ -316,27 +318,45 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           border-color: #FF8A65;
           background: rgba(255,110,64,0.04);
         }
+        .mike-textarea:focus { border-color: #FF8A65 !important; outline: none; }
+        @media (max-width: 767px) {
+          .mike-chat-root { height: calc(100vh - 56px) !important; }
+          .mike-messages { padding: 16px !important; }
+          .mike-input-area { padding: 12px 16px max(16px, env(safe-area-inset-bottom)) !important; }
+          .mike-user-bubble { max-width: 90% !important; }
+          .mike-assistant-bubble { max-width: 90% !important; }
+        }
       `}</style>
 
       {/* Messages area */}
       <div
+        className="mike-messages"
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: 16,
+          padding: "24px 32px",
           display: "flex",
           flexDirection: "column",
-          gap: 12,
+          gap: 16,
+          position: "relative",
+          scrollBehavior: "smooth",
         }}
       >
+        {/* Welcome state — vertically + horizontally centered */}
         {messages.length === 0 && (
           <div
             style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "100%",
+              maxWidth: 560,
+              padding: "0 24px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              paddingTop: 40,
-              paddingBottom: 8,
+              textAlign: "center",
             }}
           >
             {/* Avatar */}
@@ -354,25 +374,23 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
                 flexShrink: 0,
               }}
             >
-              <span style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: 28, fontWeight: 700, color: "white", lineHeight: 1 }}>
-                M
-              </span>
+              <span style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: 28, fontWeight: 700, color: "white", lineHeight: 1 }}>M</span>
             </div>
 
             <h2 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: 22, fontWeight: 700, margin: "0 0 8px", color: "var(--c-text1)" }}>
               {t.headline}
             </h2>
-            <p style={{ fontSize: 14, color: "var(--c-text3)", maxWidth: 320, textAlign: "center", margin: "0 0 28px", lineHeight: 1.6 }}>
+            <p style={{ fontSize: 14, color: "var(--c-text3)", maxWidth: 320, textAlign: "center", margin: "0 0 24px", lineHeight: 1.6 }}>
               {t.subline}
             </p>
 
-            {/* Workflow cards — 1-column list */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 480, width: "100%" }}>
+            {/* Workflow cards */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 480 }}>
               {t.workflows.map((wf) => (
                 <button key={wf.title} className="mike-workflow-card" onClick={() => handleWorkflow(wf.prompt)}>
-                  <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{wf.icon}</span>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 2 }}>{wf.title}</div>
+                  <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{wf.icon}</span>
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{wf.title}</div>
                     <div style={{ fontSize: 12, color: "var(--c-text3)", lineHeight: 1.5 }}>{wf.description}</div>
                   </div>
                 </button>
@@ -414,16 +432,17 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
 
           if (msg.role === "user") {
             return (
-              <div key={msg.id} style={{ alignSelf: "flex-end", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, maxWidth: "75%" }}>
+              <div key={msg.id} className="mike-user-bubble" style={{ alignSelf: "flex-end", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, maxWidth: 480 }}>
                 <div
                   style={{
                     background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
                     color: "white",
                     borderRadius: "18px 18px 4px 18px",
                     padding: "12px 16px",
-                    fontSize: 14,
-                    lineHeight: 1.6,
+                    fontSize: 15,
+                    lineHeight: 1.65,
                     whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
                   }}
                 >
                   {msg.content}
@@ -441,17 +460,18 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           return (
             <div
               key={msg.id}
-              className="assistant-bubble"
+              className="assistant-bubble mike-assistant-bubble"
               style={{
                 alignSelf: "flex-start",
                 background: "var(--c-card)",
                 border: "1px solid var(--c-card-border)",
                 borderRadius: "18px 18px 18px 4px",
-                padding: "14px 18px",
-                maxWidth: "85%",
-                fontSize: 14,
-                lineHeight: 1.7,
+                padding: "16px 20px",
+                maxWidth: 640,
+                fontSize: 15,
+                lineHeight: 1.65,
                 whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
                 display: "flex",
                 flexDirection: "column",
               }}
@@ -462,7 +482,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
                 onClick={() => handleCopy(msg)}
                 style={{
                   alignSelf: "flex-end",
-                  marginTop: 6,
+                  marginTop: 8,
                   fontSize: 11,
                   background: "var(--c-card)",
                   border: "1px solid var(--c-card-border)",
@@ -483,10 +503,13 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
 
       {/* Input area */}
       <div
+        className="mike-input-area"
         style={{
+          flexShrink: 0,
           borderTop: "1px solid var(--c-sep)",
-          padding: "12px 16px",
+          padding: "14px 32px 18px",
           background: "var(--c-card)",
+          position: "relative",
         }}
       >
         {/* Privacy badge — always visible */}
@@ -546,9 +569,10 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
             </a>
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
             <textarea
               ref={textareaRef}
+              className="mike-textarea"
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
@@ -564,27 +588,28 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
               rows={1}
               style={{
                 flex: 1,
-                minHeight: 44,
-                maxHeight: 160,
+                minHeight: 52,
+                maxHeight: 180,
                 resize: "none",
                 borderRadius: 12,
-                border: "1px solid var(--c-card-border)",
-                background: "var(--c-bg)",
+                border: "1px solid var(--c-input-border, var(--c-card-border))",
+                background: "var(--c-input, var(--c-bg))",
                 color: "var(--c-text1)",
-                padding: "11px 14px",
-                fontSize: 14,
-                lineHeight: 1.5,
+                padding: "14px 16px",
+                fontSize: 15,
+                lineHeight: 1.6,
                 outline: "none",
                 fontFamily: "inherit",
                 overflowY: "auto",
+                transition: "border-color 0.15s",
               }}
             />
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isStreaming}
               style={{
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 borderRadius: "50%",
                 border: "none",
                 background:
