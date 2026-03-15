@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Mike System Prompt — Quarterly Audit
+
+The system prompt in `app/api/chat/route.ts` contains hardcoded rates and deadlines for Polish tax law.
+These **MUST be verified every quarter**.
+
+### Audit checklist (verify and update in `app/api/chat/route.ts`)
+
+- [ ] ZUS contribution rates (społeczne, zdrowotna)
+- [ ] Statutory interest rate (odsetki ustawowe za opóźnienie)
+- [ ] Tax interest rate (odsetki podatkowe)
+- [ ] Per diem rate (dieta krajowa) — also update `PromptLibrary.tsx` id:40 comment
+- [ ] VAT rates (any new categories or exceptions)
+- [ ] KSeF implementation status and date
+- [ ] Any new tax thresholds or limits
+
+### Schedule
+
+January · April · July · October
+
+**Owner:** [assign person]
+
+Update the `// Last verified:` and `// Next audit due:` comments in the system prompt after each audit.

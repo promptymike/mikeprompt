@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { Profile } from "./UserProfile";
+import { anonymizeText } from "@/lib/anonymize";
 
 type Lang = "pl" | "en";
 
@@ -10,6 +11,7 @@ interface Message {
   role: "user" | "assistant" | "thinking";
   content: string;
   timestamp: Date;
+  maskCount?: number; // > 0 means anonymize was applied
 }
 
 interface Props {
@@ -26,18 +28,44 @@ const T = {
     copy: "📋 Copy",
     copied: "✓ Copied!",
     placeholder: "Type a message…",
+    or_write: "or just write what you need ↓",
     privacy_off: "🔒 Privacy: data is NOT masked — click to enable protection",
     privacy_on: "🛡️ Privacy active: tax IDs, amounts masked locally before AI",
+    masked_badge: (n: number) => `🔒 ${n} item${n === 1 ? "" : "s"} masked before sending`,
     paywall_title: "⏰ Mike gave it his all today.",
     paywall_body: "You've used your 15 free messages.\nCome back tomorrow — or work with Mike without limits.",
     paywall_btn: "🚀 Unlock Pro for 10 PLN/month",
-    chips: [
-      { icon: "📧", label: "Email about overdue invoice", prompt: "Write a professional email about an overdue invoice" },
-      { icon: "📄", label: "Formal letter to authority", prompt: "Help me write a formal letter to a government authority" },
-      { icon: "📊", label: "Monthly report for manager", prompt: "Prepare a monthly report for my manager" },
-      { icon: "💰", label: "Payment reminder", prompt: "Write a polite but firm payment reminder" },
-      { icon: "📋", label: "Meeting minutes", prompt: "Help me write meeting minutes" },
-      { icon: "✉️", label: "Professional business email", prompt: "Write a professional business email" },
+    workflows: [
+      {
+        icon: "📄",
+        title: "Payment demand letter",
+        description: "Per Art. 476 Civil Code — with 11.25% interest and 14-day deadline",
+        prompt: "Write a payment demand letter. I need: amount owed, due date, debtor name (you can use [DEBTOR NAME] for anonymity). The letter should cite Art. 476 Civil Code, include statutory interest for delay (11.25% per annum) and a 14-day payment deadline. Creditor details: [COMPANY NAME], tax ID: [TAX ID].",
+      },
+      {
+        icon: "🏛️",
+        title: "Reply to ZUS / tax authority",
+        description: "Formal letter with proper structure and legal references",
+        prompt: "Help me write a reply to a summons from ZUS or the Tax Authority. Describe the case: what the summons concerns and what you want to explain or contest. I will prepare a letter with proper structure, date, sender details and reference to the relevant regulations.",
+      },
+      {
+        icon: "📊",
+        title: "JPK discrepancy explanation",
+        description: "Letter to Tax Office explaining JPK_V7 differences",
+        prompt: "Write a letter explaining discrepancies in JPK_V7. Tell me: which period, what the discrepancy is and what caused it. I can use [PLACEHOLDER] for confidential data. I will prepare a formal letter to the Tax Office.",
+      },
+      {
+        icon: "📋",
+        title: "Internal procedure / instruction",
+        description: "Step-by-step guide for staff — invoices, expenses, requests",
+        prompt: "Write an internal procedure for employees. Topic: [describe — e.g. how to properly describe cost invoices, how to settle business travel expenses, how to submit leave requests]. The procedure should be simple, step-by-step, understandable for someone without accounting knowledge. Format: numbered steps with examples.",
+      },
+      {
+        icon: "📧",
+        title: "Missing documents email",
+        description: "Polite but direct email listing missing documents",
+        prompt: "Write an email to a client or employee about missing documents. Provide: which documents are missing and what the submission deadline is. If you want — add consequences of missing the deadline. Tone: polite but direct.",
+      },
     ],
   },
   pl: {
@@ -47,18 +75,44 @@ const T = {
     copy: "📋 Kopiuj",
     copied: "✓ Skopiowano!",
     placeholder: "Napisz wiadomość…",
+    or_write: "lub napisz wprost co potrzebujesz ↓",
     privacy_off: "🔒 Prywatność: dane NIE są maskowane — kliknij aby włączyć ochronę",
     privacy_on: "🛡️ Prywatność aktywna: NIP, PESEL i kwoty są maskowane lokalnie",
+    masked_badge: (n: number) => `🔒 ${n} ${n === 1 ? "dana zamaskowana" : n < 5 ? "dane zamaskowane" : "danych zamaskowanych"} przed wysłaniem`,
     paywall_title: "⏰ Mike dał z siebie wszystko na dziś.",
     paywall_body: "Wykorzystałeś 15 darmowych wiadomości.\nWróć jutro — lub pracuj z Mike'iem bez limitów.",
     paywall_btn: "🚀 Odblokuj Pro za 10 zł/mc",
-    chips: [
-      { icon: "📧", label: "Napisz maila o zaległej fakturze", prompt: "Napisz profesjonalny mail do klienta o zaległej fakturze" },
-      { icon: "🏛️", label: "Pismo do Urzędu Skarbowego", prompt: "Pomóż mi napisać pismo do Urzędu Skarbowego" },
-      { icon: "📊", label: "Raport miesięczny dla szefa", prompt: "Przygotuj raport miesięczny dla przełożonego" },
-      { icon: "💰", label: "Ponaglenie zapłaty do klienta", prompt: "Napisz uprzejme ale stanowcze ponaglenie zapłaty" },
-      { icon: "📋", label: "Protokół ze spotkania", prompt: "Pomóż mi napisać protokół ze spotkania" },
-      { icon: "🏢", label: "Wniosek do ZUS / KAS", prompt: "Napisz wniosek lub pismo do ZUS lub KAS" },
+    workflows: [
+      {
+        icon: "📄",
+        title: "Wezwanie do zapłaty",
+        description: "Zgodne z art. 476 KC — z odsetkami 11.25% i terminem 14 dni",
+        prompt: "Napisz wezwanie do zapłaty. Potrzebuję: kwota należności, data wymagalności, nazwa dłużnika (możesz użyć [NAZWA DŁUŻNIKA] dla anonimowości). Wezwanie ma być zgodne z art. 476 KC, zawierać naliczone odsetki ustawowe za opóźnienie (11.25% rocznie) i 14-dniowy termin zapłaty. Dane wierzyciela: [NAZWA FIRMY], NIP: [NIP].",
+      },
+      {
+        icon: "🏛️",
+        title: "Odpowiedź na wezwanie ZUS / US",
+        description: "Formalne pismo z właściwą strukturą i przepisami",
+        prompt: "Pomóż mi napisać odpowiedź na wezwanie z ZUS lub Urzędu Skarbowego. Opisz sprawę: czego dotyczy wezwanie i co chcesz wyjaśnić lub zakwestionować. Przygotuję pismo z właściwą strukturą, datą, danymi nadawcy i powołaniem na właściwe przepisy.",
+      },
+      {
+        icon: "📊",
+        title: "Wyjaśnienie rozbieżności w JPK",
+        description: "Pismo do US wyjaśniające różnice w pliku JPK_V7",
+        prompt: "Napisz pismo wyjaśniające rozbieżności w JPK_V7. Powiedz mi: za jaki okres, jaka jest rozbieżność i jaka jest jej przyczyna. Mogę użyć [PLACEHOLDER] dla danych poufnych. Przygotuję formalne pismo do Urzędu Skarbowego.",
+      },
+      {
+        icon: "📋",
+        title: "Instrukcja / procedura wewnętrzna",
+        description: "Instrukcja dla pracowników — opis faktur, rozliczenia, procedury",
+        prompt: "Napisz instrukcję wewnętrzną dla pracowników. Temat instrukcji: [opisz — np. jak prawidłowo opisywać faktury kosztowe, jak rozliczać delegacje, jak składać wnioski urlopowe]. Instrukcja powinna być prosta, krok po kroku, zrozumiała dla osoby bez wiedzy księgowej. Format: ponumerowane kroki z przykładami.",
+      },
+      {
+        icon: "📧",
+        title: "Mail o brakach w dokumentach",
+        description: "Uprzejmy ale konkretny mail z listą brakujących dokumentów",
+        prompt: "Napisz mail do klienta lub pracownika o brakujących dokumentach. Podaj: jakich dokumentów brakuje i jaki jest termin ich dostarczenia. Jeśli chcesz — dodaj konsekwencje braku dokumentów. Ton: uprzejmy ale konkretny.",
+      },
     ],
   },
 };
@@ -95,14 +149,24 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
 
   const sendMessage = useCallback(
     async (overrideInput?: string) => {
-      const text = (overrideInput ?? input).trim();
-      if (!text || isStreaming || usageCount >= 15) return;
+      const rawText = (overrideInput ?? input).trim();
+      if (!rawText || isStreaming || usageCount >= 15) return;
+
+      // Client-side anonymization for badge count
+      let textToSend = rawText;
+      let maskCount = 0;
+      if (anonymize) {
+        const { anonymized, map } = anonymizeText(rawText);
+        textToSend = anonymized;
+        maskCount = Object.keys(map).length;
+      }
 
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
-        content: text,
+        content: rawText, // always show original text to user
         timestamp: new Date(),
+        maskCount: maskCount > 0 ? maskCount : undefined,
       };
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
@@ -127,6 +191,13 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
       let firstChunk = true;
       const assistantId = `assistant-${Date.now()}`;
 
+      // Build messages for API — replace last user message content with anonymized version
+      const apiMessages = newMessages.map((m, i) =>
+        i === newMessages.length - 1 && m.role === "user"
+          ? { role: m.role, content: textToSend }
+          : { role: m.role, content: m.content }
+      );
+
       try {
         const profileObj =
           profile && (profile.name || profile.role || profile.industry)
@@ -137,10 +208,10 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+            messages: apiMessages,
             profile: profileObj,
             lang,
-            anonymize,
+            anonymize: false, // already anonymized client-side
           }),
         });
 
@@ -187,7 +258,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
     [input, isStreaming, usageCount, messages, profile, lang, anonymize]
   );
 
-  const handleChip = (prompt: string) => {
+  const handleWorkflow = (prompt: string) => {
     setTimeout(() => sendMessage(prompt), 0);
   };
 
@@ -202,7 +273,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
   return (
     <div
       style={{
-        minHeight: "calc(100vh - 200px)",
+        minHeight: "calc(100vh - 280px)",
         display: "flex",
         flexDirection: "column",
         background: "var(--c-bg)",
@@ -225,16 +296,15 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
         .copy-btn { opacity: 0; transition: opacity 0.15s; }
         @media (hover: none) { .copy-btn { opacity: 1 !important; } }
         .assistant-bubble:hover .copy-btn { opacity: 1; }
-        .mike-chip {
+        .mike-workflow-card {
           background: var(--c-card);
           border: 1px solid var(--c-card-border);
           border-radius: 14px;
           padding: 14px 18px;
           display: flex;
-          align-items: center;
-          gap: 10px;
+          align-items: flex-start;
+          gap: 12px;
           font-size: 14px;
-          font-weight: 500;
           color: var(--c-text1);
           cursor: pointer;
           transition: all 0.18s;
@@ -242,7 +312,7 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           font-family: inherit;
           width: 100%;
         }
-        .mike-chip:hover {
+        .mike-workflow-card:hover {
           border-color: #FF8A65;
           background: rgba(255,110,64,0.04);
         }
@@ -284,67 +354,34 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
                 flexShrink: 0,
               }}
             >
-              <span
-                style={{
-                  fontFamily: "Fraunces, Georgia, serif",
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: "white",
-                  lineHeight: 1,
-                }}
-              >
+              <span style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: 28, fontWeight: 700, color: "white", lineHeight: 1 }}>
                 M
               </span>
             </div>
 
-            {/* Headline */}
-            <h2
-              style={{
-                fontFamily: "Fraunces, Georgia, serif",
-                fontSize: 22,
-                fontWeight: 700,
-                margin: "0 0 8px",
-                color: "var(--c-text1)",
-              }}
-            >
+            <h2 style={{ fontFamily: "Fraunces, Georgia, serif", fontSize: 22, fontWeight: 700, margin: "0 0 8px", color: "var(--c-text1)" }}>
               {t.headline}
             </h2>
-
-            {/* Subline */}
-            <p
-              style={{
-                fontSize: 14,
-                color: "var(--c-text3)",
-                maxWidth: 320,
-                textAlign: "center",
-                margin: "0 0 28px",
-                lineHeight: 1.6,
-              }}
-            >
+            <p style={{ fontSize: 14, color: "var(--c-text3)", maxWidth: 320, textAlign: "center", margin: "0 0 28px", lineHeight: 1.6 }}>
               {t.subline}
             </p>
 
-            {/* Quick action chips — 2-column grid */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 10,
-                maxWidth: 480,
-                width: "100%",
-              }}
-            >
-              {t.chips.map((chip) => (
-                <button
-                  key={chip.label}
-                  className="mike-chip"
-                  onClick={() => handleChip(chip.prompt)}
-                >
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{chip.icon}</span>
-                  <span>{chip.label}</span>
+            {/* Workflow cards — 1-column list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 480, width: "100%" }}>
+              {t.workflows.map((wf) => (
+                <button key={wf.title} className="mike-workflow-card" onClick={() => handleWorkflow(wf.prompt)}>
+                  <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{wf.icon}</span>
+                  <div>
+                    <div style={{ fontWeight: 600, marginBottom: 2 }}>{wf.title}</div>
+                    <div style={{ fontSize: 12, color: "var(--c-text3)", lineHeight: 1.5 }}>{wf.description}</div>
+                  </div>
                 </button>
               ))}
             </div>
+
+            <p style={{ fontSize: 12, color: "var(--c-text4)", textAlign: "center", marginTop: 12 }}>
+              {t.or_write}
+            </p>
           </div>
         )}
 
@@ -377,21 +414,25 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
 
           if (msg.role === "user") {
             return (
-              <div
-                key={msg.id}
-                style={{
-                  alignSelf: "flex-end",
-                  background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                  color: "white",
-                  borderRadius: "18px 18px 4px 18px",
-                  padding: "12px 16px",
-                  maxWidth: "75%",
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {msg.content}
+              <div key={msg.id} style={{ alignSelf: "flex-end", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, maxWidth: "75%" }}>
+                <div
+                  style={{
+                    background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                    color: "white",
+                    borderRadius: "18px 18px 4px 18px",
+                    padding: "12px 16px",
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {msg.content}
+                </div>
+                {msg.maskCount !== undefined && msg.maskCount > 0 && (
+                  <span style={{ fontSize: 11, color: "#2E7D32", background: "rgba(67,160,71,0.08)", border: "1px solid rgba(67,160,71,0.2)", borderRadius: 8, padding: "3px 10px" }}>
+                    {t.masked_badge(msg.maskCount)}
+                  </span>
+                )}
               </div>
             );
           }

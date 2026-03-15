@@ -386,7 +386,9 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"chat" | "polish" | "anonymize" | "library" | "usecases" | "history" | "about">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "polish" | "anonymize" | "library" | "history">("chat");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [chatUsageCount, setChatUsageCount] = useState(0);
   const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
@@ -465,6 +467,11 @@ const MikePromptMVP = () => {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+    const key = `mikeprompt_chat_count_${new Date().toISOString().slice(0, 10)}`;
+    setChatUsageCount(parseInt(localStorage.getItem(key) ?? "0", 10));
+  }, [activeTab]);
 
   const toggleLang = () => {
     const next: Lang = lang === "en" ? "pl" : "en";
@@ -604,21 +611,12 @@ const MikePromptMVP = () => {
         ? "🔒 Prompty nie są zapisywane · Powered by Claude · Działa z każdym AI"
         : "🔒 Prompts not stored · Powered by Claude · Works with every AI");
 
-  const TABS = [
-    ["chat", t.tab_chat],
-    ["polish", t.tab_polish],
-    ["anonymize", t.tab_anonymize],
-    ["library", t.tab_library],
-    ["usecases", t.tab_usecases],
-    ["history", t.tab_history],
-    ["about", t.tab_about],
-  ] as const;
-
   return (
     <div
       data-theme={dark ? "dark" : "light"}
       style={{
         minHeight: "100vh",
+        display: "flex",
         background: "var(--c-page-bg)",
         fontFamily: "'DM Sans', sans-serif",
         color: "var(--c-text1)",
@@ -641,123 +639,177 @@ const MikePromptMVP = () => {
         }} />
       </div>
 
-      {/* Nav — two-level sticky header */}
-      <header
+      {/* Mobile backdrop */}
+      {sidebarOpen && isMobile && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 149 }}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
         data-theme={dark ? "dark" : "light"}
         style={{
-          position: "sticky", top: 0, zIndex: 100,
+          width: 220, flexShrink: 0,
           background: "var(--c-card)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--c-card-border)",
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(-20px)",
-          transition: "all 0.8s ease",
-        }}>
-        {/* Top row: Logo | Utility buttons */}
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: isMobile ? "12px 16px 8px" : "12px 24px 8px",
-          maxWidth: 1200, margin: "0 auto",
-        }}>
-          {/* Logo — clickable, goes to Polish tab */}
-          <button
-            onClick={() => setActiveTab("polish")}
-            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: 0 }}
-          >
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "linear-gradient(135deg, #FF8A65, #FF6E40)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, color: "white", fontWeight: 700,
-              fontFamily: "'Fraunces', serif",
-              boxShadow: "0 3px 10px rgba(255,110,64,0.25)",
-              flexShrink: 0,
-            }}>M</div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: "'Fraunces', serif", color: "var(--c-text1)" }}>
-                mike<span style={{ color: "#FF6E40" }}>prompt</span>
-              </div>
-              <div style={{ fontSize: 10, color: "var(--c-text4)", marginTop: -2 }}>{t.tagline}</div>
+          borderRight: "1px solid var(--c-card-border)",
+          height: "100vh",
+          position: isMobile ? "fixed" : "sticky",
+          top: 0,
+          display: "flex", flexDirection: "column",
+          padding: "20px 12px",
+          zIndex: isMobile ? 150 : 10,
+          transform: isMobile ? (sidebarOpen ? "translateX(0)" : "translateX(-100%)") : "none",
+          transition: "transform 0.25s ease",
+          overflowY: "auto",
+        }}
+      >
+        {/* Logo */}
+        <button
+          onClick={() => { setActiveTab("chat"); setSidebarOpen(false); }}
+          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "0 4px", marginBottom: 28, textAlign: "left" }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: "linear-gradient(135deg, #FF8A65, #FF6E40)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 18, color: "white", fontWeight: 700,
+            fontFamily: "'Fraunces', serif",
+            boxShadow: "0 3px 10px rgba(255,110,64,0.25)",
+            flexShrink: 0,
+          }}>M</div>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: "'Fraunces', serif", color: "var(--c-text1)" }}>
+              mike<span style={{ color: "#FF6E40" }}>prompt</span>
             </div>
+            <div style={{ fontSize: 10, color: "var(--c-text4)", marginTop: -1 }}>{t.tagline}</div>
+          </div>
+        </button>
+
+        {/* Nav */}
+        <nav style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+          {/* Chat — primary */}
+          <button
+            onClick={() => { setActiveTab("chat"); setSidebarOpen(false); }}
+            className="sidebar-nav-btn"
+            style={{
+              padding: "10px 12px", fontSize: 14, borderRadius: 10,
+              border: "none", cursor: "pointer", width: "100%", textAlign: "left",
+              display: "flex", alignItems: "center", gap: 8,
+              background: activeTab === "chat" ? "rgba(255,110,64,0.1)" : "transparent",
+              color: activeTab === "chat" ? "#FF6E40" : "var(--c-text2)",
+              fontWeight: 600,
+            }}
+          >
+            {activeTab !== "chat" && (
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF6E40", flexShrink: 0 }} />
+            )}
+            💬 {lang === "pl" ? "Chat" : "Chat"}
           </button>
 
-          {/* Right: utility buttons */}
-          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 6, flexShrink: 0 }}>
-            {!isMobile && dailyCount > 0 && (
-              <div style={{ fontSize: 12, color: "#FF6E40", fontWeight: 600, background: "var(--c-badge)", borderRadius: 100, padding: "3px 10px", whiteSpace: "nowrap" }}>
-                🔥 {dailyCount}
-              </div>
-            )}
-            {!isMobile && (
-              <div style={{ fontSize: 12, color: "var(--c-text3)", fontWeight: 500, whiteSpace: "nowrap" }}>
-                {MAX_FREE - usageCount > 0 ? `${MAX_FREE - usageCount} ${t.free_left}` : t.sign_up_more}
-              </div>
-            )}
-            <button onClick={toggleDark} style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
+          {/* Divider label */}
+          <div style={{ padding: "10px 12px 4px", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.8px", color: "var(--c-text4)", fontWeight: 600 }}>
+            {lang === "pl" ? "Narzędzia" : "Tools"}
+          </div>
+
+          {([ ["polish", "⚡", lang === "pl" ? "Poleruj prompt" : "Polish Prompt"],
+              ["anonymize", "🔒", lang === "pl" ? "Anonimizuj" : "Anonymize"],
+              ["library", "📚", lang === "pl" ? "Szablony" : "Templates"],
+              ["history", "📂", lang === "pl" ? "Historia" : "History"],
+          ] as const).map(([tab, icon, label]) => (
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setSidebarOpen(false); }}
+              className="sidebar-nav-btn"
+              style={{
+                padding: "10px 12px", fontSize: 14, borderRadius: 10,
+                border: "none", cursor: "pointer", width: "100%", textAlign: "left",
+                display: "flex", alignItems: "center", gap: 8,
+                background: activeTab === tab ? "rgba(255,110,64,0.1)" : "transparent",
+                color: activeTab === tab ? "#FF6E40" : "var(--c-text3)",
+                fontWeight: activeTab === tab ? 600 : 400,
+              }}
+            >
+              <span>{icon}</span> {label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Sidebar bottom */}
+        <div style={{ borderTop: "1px solid var(--c-sep)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Profile button */}
+          <button
+            onClick={() => setProfileOpen(true)}
+            title={profileTooltip}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 12px", borderRadius: 10, border: "none",
+              cursor: "pointer", background: "transparent",
+              color: "var(--c-text2)", fontSize: 14, width: "100%", textAlign: "left",
+            }}
+          >
+            <div style={{
+              width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+              background: (profileInitial || currentUser) ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)",
+              color: (profileInitial || currentUser) ? "white" : "var(--c-toggle-color)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 700,
+            }}>
+              {profileIcon()}
+            </div>
+            {lang === "pl" ? "Profil" : "Profile"}
+          </button>
+
+          {/* Dark + Lang toggles */}
+          <div style={{ display: "flex", gap: 6, padding: "0 4px" }}>
+            <button onClick={toggleDark} style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 13, cursor: "pointer" }}>
               {dark ? "☀️" : "🌙"}
             </button>
-            <button onClick={toggleLang} style={{ padding: "4px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 11, fontWeight: 600, color: "var(--c-toggle-color)", cursor: "pointer", flexShrink: 0 }}>
+            <button onClick={toggleLang} style={{ flex: 1, padding: "6px 8px", borderRadius: 8, border: "1px solid var(--c-toggle-border)", background: "var(--c-toggle)", fontSize: 11, fontWeight: 600, color: "var(--c-toggle-color)", cursor: "pointer" }}>
               {lang === "en" ? "PL" : "EN"}
             </button>
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <button
-                onClick={() => setProfileOpen(true)}
-                title={profileTooltip}
-                style={{
-                  width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
-                  background: (profileInitial || currentUser) ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)",
-                  color: (profileInitial || currentUser) ? "white" : "var(--c-toggle-color)",
-                  fontSize: profileInitial ? 13 : 15, fontWeight: 700,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  outline: "1px solid var(--c-toggle-border)",
-                }}
-              >
-                {profileIcon()}
-              </button>
-              {profileCompletion === 0 && (
-                <div style={{
-                  position: "absolute", top: -2, right: -2,
-                  width: 8, height: 8, borderRadius: "50%",
-                  background: "#FF6E40",
-                  border: "2px solid var(--c-page-bg-solid, white)",
-                  pointerEvents: "none",
-                }} />
-              )}
-            </div>
           </div>
-        </div>
 
-        {/* Bottom row: Tabs */}
-        <div style={{
-          padding: isMobile ? "0 12px 10px" : "0 24px 10px",
-          overflowX: "auto", scrollbarWidth: "none",
-        }}>
+          {/* Chat usage counter */}
           <div style={{
-            display: "flex", gap: 2,
-            background: "var(--c-tab-bar)", borderRadius: 10, padding: 3,
-            width: isMobile ? "max-content" : "fit-content",
-            margin: isMobile ? "0" : "0 auto",
+            padding: "2px 4px", fontSize: 11,
+            color: chatUsageCount >= 15 ? "#E53935" : chatUsageCount >= 12 ? "#FF6E40" : "var(--c-text4)",
           }}>
-            {TABS.map(([tab, label]) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: isMobile ? "5px 10px" : "6px 14px",
-                  fontSize: isMobile ? 12 : 13,
-                  borderRadius: 7, border: "none",
-                  background: activeTab === tab ? "var(--c-tab-active)" : "transparent",
-                  color: activeTab === tab ? "var(--c-tab-active-text)" : "var(--c-tab-inactive-text)",
-                  fontWeight: activeTab === tab ? 600 : 400,
-                  cursor: "pointer",
-                  boxShadow: activeTab === tab ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-                  transition: "all 0.18s", whiteSpace: "nowrap", flexShrink: 0,
-                }}
-              >{label}</button>
-            ))}
+            {lang === "pl" ? `${chatUsageCount}/15 wiadomości dziś` : `${chatUsageCount}/15 messages today`}
           </div>
         </div>
-      </header>
+      </aside>
+
+      {/* Content area */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+
+        {/* Mobile header */}
+        {isMobile && (
+          <header style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "12px 16px",
+            background: "var(--c-card)", borderBottom: "1px solid var(--c-card-border)",
+            position: "sticky", top: 0, zIndex: 100,
+          }}>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--c-text1)" }}
+            >☰</button>
+            <button
+              onClick={() => { setActiveTab("chat"); setSidebarOpen(false); }}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
+            >
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #FF8A65, #FF6E40)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "white", fontWeight: 700, fontFamily: "'Fraunces', serif" }}>M</div>
+              <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "'Fraunces', serif", color: "var(--c-text1)" }}>mike<span style={{ color: "#FF6E40" }}>prompt</span></span>
+            </button>
+            <button
+              onClick={() => setProfileOpen(true)}
+              title={profileTooltip}
+              style={{ width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer", background: (profileInitial || currentUser) ? "linear-gradient(135deg, #FF6E40, #FF8A65)" : "var(--c-toggle)", color: (profileInitial || currentUser) ? "white" : "var(--c-toggle-color)", fontSize: profileInitial ? 13 : 15, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", outline: "1px solid var(--c-toggle-border)" }}
+            >{profileIcon()}</button>
+          </header>
+        )}
 
       {/* Profile sidebar */}
       <UserProfile
@@ -851,53 +903,10 @@ const MikePromptMVP = () => {
 
       {/* Main */}
       <main style={{
-        maxWidth: 800, margin: "0 auto", padding: isMobile ? "16px 16px 60px" : "20px 24px 60px",
+        flex: 1, padding: activeTab === "chat" ? 0 : (isMobile ? "16px 16px 60px" : "20px 24px 60px"),
         position: "relative", zIndex: 5,
       }}>
-        {/* About tab */}
-        {activeTab === "about" && <About lang={lang} />}
-
-        {/* Anonymize tab */}
-        {activeTab === "anonymize" && <AnonymizeTool lang={lang} />}
-
-        {/* History tab */}
-        {activeTab === "history" && (
-          <SavedPrompts
-            lang={lang}
-            currentUser={currentUser}
-            userProfile={profile}
-            onOpenProfile={() => setProfileOpen(true)}
-            onReuse={(prompt) => {
-              setInput(prompt); setActiveTab("polish");
-              setShowResults(false); setOptimized(""); setFixes([]);
-            }}
-            onNavigate={(tab) => setActiveTab(tab as "chat" | "polish" | "anonymize" | "library" | "usecases" | "history" | "about")}
-          />
-        )}
-
-        {/* Use Cases tab */}
-        {activeTab === "usecases" && (
-          <UseCases
-            lang={lang}
-            onTryNow={(prompt) => {
-              setInput(prompt); setActiveTab("polish");
-              setShowResults(false); setOptimized(""); setFixes([]);
-            }}
-          />
-        )}
-
-        {/* Library tab */}
-        {activeTab === "library" && (
-          <PromptLibrary
-            lang={lang}
-            onPolish={(prompt) => {
-              setInput(prompt); setActiveTab("polish");
-              setShowResults(false); setOptimized(""); setFixes([]);
-            }}
-          />
-        )}
-
-        {/* Chat tab */}
+        {/* Chat tab — full width, no padding wrapper */}
         {activeTab === "chat" && (
           <MikeChat
             lang={lang}
@@ -905,6 +914,52 @@ const MikePromptMVP = () => {
             currentUser={currentUser}
           />
         )}
+
+        {activeTab !== "chat" && (
+          <div style={{ maxWidth: 800, margin: "0 auto" }}>
+
+            {/* Anonymize tab */}
+            {activeTab === "anonymize" && <AnonymizeTool lang={lang} />}
+
+            {/* History tab */}
+            {activeTab === "history" && (
+              <SavedPrompts
+                lang={lang}
+                currentUser={currentUser}
+                userProfile={profile}
+                onOpenProfile={() => setProfileOpen(true)}
+                onReuse={(prompt) => {
+                  setInput(prompt); setActiveTab("polish");
+                  setShowResults(false); setOptimized(""); setFixes([]);
+                }}
+                onNavigate={(tab) => setActiveTab(tab as "chat" | "polish" | "anonymize" | "library" | "history")}
+              />
+            )}
+
+            {/* Szablony tab — Library + UseCases */}
+            {activeTab === "library" && (
+              <>
+                <PromptLibrary
+                  lang={lang}
+                  onPolish={(prompt) => {
+                    setInput(prompt); setActiveTab("polish");
+                    setShowResults(false); setOptimized(""); setFixes([]);
+                  }}
+                />
+                <div style={{ borderTop: "1px solid var(--c-sep)", margin: "32px 0 24px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text2)" }}>
+                    {lang === "pl" ? "💡 Przykłady użycia" : "💡 Use cases"}
+                  </span>
+                </div>
+                <UseCases
+                  lang={lang}
+                  onTryNow={(prompt) => {
+                    setInput(prompt); setActiveTab("polish");
+                    setShowResults(false); setOptimized(""); setFixes([]);
+                  }}
+                />
+              </>
+            )}
 
         {/* Polish tab */}
         {activeTab === "polish" && (<>
@@ -1412,26 +1467,29 @@ const MikePromptMVP = () => {
 
         </>)}
 
-        {/* Footer — visible on all tabs */}
-        <footer style={{ marginTop: 60, paddingBottom: 24, textAlign: "center", fontSize: 13, color: "var(--c-text4)" }}>
-          {t.footer}
-          <a href="mailto:hello@mikeprompt.com" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
-            hello@mikeprompt.com
-          </a>
-          <span style={{ margin: "0 8px" }}>·</span>
-          <a href="/privacy" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
-            {lang === "pl" ? "Prywatność" : "Privacy"}
-          </a>
-          <span style={{ margin: "0 8px" }}>·</span>
-          <a href="/terms" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
-            {lang === "pl" ? "Regulamin" : "Terms"}
-          </a>
-          <span style={{ margin: "0 8px" }}>·</span>
-          <a href="/security" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
-            {lang === "pl" ? "Bezpieczeństwo" : "Security"}
-          </a>
-        </footer>
+            {/* Footer */}
+            <footer style={{ marginTop: 60, paddingBottom: 24, textAlign: "center", fontSize: 13, color: "var(--c-text4)" }}>
+              {t.footer}
+              <a href="mailto:hello@mikeprompt.com" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+                hello@mikeprompt.com
+              </a>
+              <span style={{ margin: "0 8px" }}>·</span>
+              <a href="/privacy" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+                {lang === "pl" ? "Prywatność" : "Privacy"}
+              </a>
+              <span style={{ margin: "0 8px" }}>·</span>
+              <a href="/terms" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+                {lang === "pl" ? "Regulamin" : "Terms"}
+              </a>
+              <span style={{ margin: "0 8px" }}>·</span>
+              <a href="/security" style={{ color: "var(--c-text4)", textDecoration: "none" }}>
+                {lang === "pl" ? "Bezpieczeństwo" : "Security"}
+              </a>
+            </footer>
+          </div>
+        )}
       </main>
+      </div>{/* end content area */}
 
       <style>{`
         ${CSS_VARS}
@@ -1441,6 +1499,7 @@ const MikePromptMVP = () => {
         textarea::placeholder, input::placeholder { color: var(--c-text4); }
         select option { color: #2D2A26; background: white; }
         [data-theme="dark"] select option { color: #E0DAD4; background: #2C2925; }
+        .sidebar-nav-btn:hover { background: var(--c-hover) !important; color: var(--c-text1) !important; }
       `}</style>
       <CookieBanner lang={lang} />
     </div>

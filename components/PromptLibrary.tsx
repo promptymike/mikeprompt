@@ -13,6 +13,81 @@ export interface LibraryPrompt {
 }
 
 const LIBRARY: LibraryPrompt[] = [
+  // ── Korespondencja urzędowa (Official Correspondence) ──
+  {
+    id: 32,
+    title: "Wniosek o odroczenie terminu płatności podatku",
+    description: "Wniosek do US na podstawie art. 48 § 1 Ordynacji podatkowej",
+    tag: "Any AI",
+    category: "Official Correspondence",
+    categoryIcon: "🏛️",
+    prompt: `Napisz formalny wniosek o odroczenie terminu płatności podatku na podstawie art. 48 § 1 Ordynacji podatkowej. Dane podatnika: nazwa firmy [NAZWA], NIP [NIP], adres [ADRES]. Rodzaj podatku: [np. VAT-7 za miesiąc X / zaliczka CIT]. Kwota: [KWOTA] PLN. Wnioskowany nowy termin płatności: [DATA]. Uzasadnienie: [opisz przyczyny — np. przejściowe trudności płynnościowe, opóźnienie zapłaty od kontrahenta, zdarzenie losowe]. Wniosek powinien być rzeczowy, zawierać propozycję harmonogramu spłaty jeśli dotyczy i oświadczenie o dobrej wierze podatnika.`,
+  },
+  {
+    id: 33,
+    title: "Wyjaśnienie do kontroli podatkowej / skarbowej",
+    description: "Pismo wyjaśniające w trakcie kontroli — rzeczowe i zabezpieczające",
+    tag: "Any AI",
+    category: "Official Correspondence",
+    categoryIcon: "🏛️",
+    prompt: `Napisz wyjaśnienia do kontroli podatkowej lub skarbowej. Dotyczy: [opisz czego żąda kontrola — np. wyjaśnienie transakcji z kontrahentem X, podstawa odliczenia VAT, dokumentacja kosztów]. Moje stanowisko: [opisz fakty i podstawę prawną]. Pismo powinno: 1) Być napisane spokojnym, rzeczowym językiem urzędowym, 2) Odwoływać się do konkretnych dokumentów (faktury, umowy — podaj numery), 3) Cytować właściwe przepisy (ustawa o VAT, ustawa o CIT, Ordynacja podatkowa), 4) Zakończyć się prośbą o uwzględnienie wyjaśnień. Dane firmy: [NAZWA, NIP]. Numer protokołu kontroli: [NUMER].`,
+  },
+  {
+    id: 34,
+    title: "Odwołanie od decyzji ZUS",
+    description: "Odwołanie na podstawie art. 83 ust. 2 ustawy o SUS",
+    tag: "Any AI",
+    category: "Official Correspondence",
+    categoryIcon: "🏛️",
+    prompt: `Napisz odwołanie od decyzji ZUS na podstawie art. 83 ust. 2 ustawy z dnia 13 października 1998 r. o systemie ubezpieczeń społecznych. Dane odwołującego: [IMIĘ NAZWISKO / NAZWA FIRMY], NIP/PESEL: [NUMER], adres: [ADRES]. Numer zaskarżonej decyzji: [NUMER], data wydania: [DATA]. Zarzuty wobec decyzji: [opisz co kwestionujesz — np. błędne ustalenie podstawy wymiaru składek, naruszenie procedury, błędna kwalifikacja umowy]. Wnioskuję o: [uchylenie / zmianę decyzji]. Uzasadnienie: [opisz fakty i argumenty prawne]. Odwołanie trafia do sądu rejonowego za pośrednictwem ZUS — zachowaj właściwy format.`,
+  },
+  // ── AR / AP — Należności i Zobowiązania ──
+  {
+    id: 35,
+    title: "Wezwanie do zapłaty — 3 poziomy",
+    description: "Polubowne, stanowcze i przedsądowe — gotowe do wysłania",
+    tag: "Any AI",
+    category: "AR / AP",
+    categoryIcon: "💰",
+    prompt: `Przygotuj 3 wersje wezwania do zapłaty dla tej samej należności: Dane: wierzyciel [NAZWA FIRMY, NIP], dłużnik [NAZWA DŁUŻNIKA], kwota [KWOTA] PLN, faktura numer [NR FAKTURY] z dnia [DATA], termin płatności minął [DATA]. 1) POLUBOWNE (1. wezwanie): uprzejme przypomnienie, prośba o kontakt, termin 7 dni, bez gróźb. 2) STANOWCZE (2. wezwanie): powołanie na art. 476 i 481 KC, naliczone odsetki ustawowe za opóźnienie (11.25% rocznie od dnia wymagalności), termin ostateczny 7 dni, informacja o kosztach postępowania. 3) PRZEDSĄDOWE (3. wezwanie): ostateczne wezwanie, pełna kwota z odsetkami wyliczonymi na dzień pisma, informacja o skierowaniu sprawy na drogę sądową i obciążeniu kosztami postępowania i zastępstwa procesowego. Wszystkie wezwania z właściwą strukturą pisma.`,
+  },
+  {
+    id: 36,
+    title: "Potwierdzenie salda z kontrahentem",
+    description: "Pismo do potwierdzenia sald na potrzeby audytu lub inwentaryzacji",
+    tag: "Any AI",
+    category: "AR / AP",
+    categoryIcon: "💰",
+    prompt: `Napisz pismo do kontrahenta z prośbą o potwierdzenie salda na potrzeby [audytu / inwentaryzacji rocznej]. Dane: nasza firma [NAZWA, NIP], kontrahent [NAZWA, NIP]. Saldo na dzień [DATA BILANSOWA]: należność [KWOTA] PLN / zobowiązanie [KWOTA] PLN (wybierz właściwe). Pismo powinno zawierać: 1) Informację o podstawie prawnej inwentaryzacji (art. 26 ustawy o rachunkowości), 2) Prośbę o potwierdzenie salda lub zgłoszenie rozbieżności, 3) Termin odpowiedzi (zazwyczaj 14 dni), 4) Dane osoby do kontaktu w razie rozbieżności. Dołącz szablon odpowiedzi z polami: potwierdzam saldo / nie potwierdzam — nasze saldo wynosi [KWOTA].`,
+  },
+  {
+    id: 37,
+    title: "Nota kompensacyjna (potrącenie wzajemnych wierzytelności)",
+    description: "Nota na podstawie art. 498 KC — kompensata należności i zobowiązań",
+    tag: "Any AI",
+    category: "AR / AP",
+    categoryIcon: "💰",
+    prompt: `Przygotuj notę kompensacyjną (potrącenie wzajemnych wierzytelności) na podstawie art. 498 Kodeksu cywilnego. Strony: [NASZA FIRMA, NIP] oraz [KONTRAHENT, NIP]. Nasza wierzytelność wobec kontrahenta: faktura [NR], kwota [KWOTA] PLN, termin wymagalności [DATA]. Wierzytelność kontrahenta wobec nas: faktura [NR], kwota [KWOTA] PLN, termin wymagalności [DATA]. Kwota kompensaty: [mniejsza z kwot] PLN. Saldo po kompensacie: [która strona jest dłużnikiem i na jaką kwotę]. Nota powinna zawierać oświadczenie o potrąceniu, podstawę prawną i informację o skuteczności z chwilą doręczenia.`,
+  },
+  // ── Dokumenty księgowe ──
+  {
+    id: 38,
+    title: "Opis faktury kosztowej (dowód księgowy)",
+    description: "Kompletny opis faktury zgodny z wymogami ustawy o rachunkowości",
+    tag: "Any AI",
+    category: "Accounting Documents",
+    categoryIcon: "📑",
+    prompt: `Pomóż mi opisać fakturę kosztową jako dowód księgowy zgodnie z art. 21 ustawy o rachunkowości. Faktura: numer [NR], data [DATA], wystawca [NAZWA], kwota netto [KWOTA] PLN, VAT [KWOTA] PLN, brutto [KWOTA] PLN. Rodzaj kosztu: [opisz np. usługi IT, wynajem samochodu, szkolenie, materiały biurowe]. Przygotuj: 1) Opis merytoryczny kosztu (cel biznesowy, związek z przychodem), 2) Kwalifikację podatkową (koszt uzyskania przychodu — tak/nie, dlaczego), 3) Kwalifikację VAT (odliczenie pełne / 50% / brak — z uzasadnieniem), 4) Konto księgowe (jeśli znasz plan kont — podaj; jeśli nie — zaproponuj ogólny schemat), 5) Podpis osoby zatwierdzającej. Format: gotowy do wydruku i dołączenia do faktury.`,
+  },
+  {
+    id: 39,
+    title: "Protokół likwidacji środka trwałego (LT)",
+    description: "Protokół LT z uzasadnieniem i wymaganymi danymi",
+    tag: "Any AI",
+    category: "Accounting Documents",
+    categoryIcon: "📑",
+    prompt: `Przygotuj protokół likwidacji środka trwałego (druk LT) zgodnie z wymogami ustawy o rachunkowości. Dane środka trwałego: nazwa [NAZWA], numer inwentarzowy [NR], data nabycia [DATA], wartość początkowa [KWOTA] PLN, dotychczasowe umorzenie [KWOTA] PLN, wartość netto na dzień likwidacji [KWOTA] PLN. Przyczyna likwidacji: [np. całkowite zużycie, uszkodzenie, kradzież, wycofanie z użycia]. Protokół powinien zawierać: 1) Datę i miejsce sporządzenia, 2) Skład komisji likwidacyjnej (imiona, stanowiska), 3) Opis stanu technicznego, 4) Uzasadnienie decyzji o likwidacji, 5) Sposób likwidacji (złomowanie / sprzedaż / zniszczenie), 6) Podpisy komisji i zatwierdzenie przez kierownika jednostki. Skutki księgowe: wyksięgowanie z ewidencji.`,
+  },
   // ── Finance & FP&A ──
   {
     id: 1,
@@ -160,6 +235,16 @@ const LIBRARY: LibraryPrompt[] = [
     categoryIcon: "📋",
     prompt: `Act as an executive assistant to a busy CEO. Create: 1) Document preparation checklist — what to verify before sending for signature (correct entity, dates, amounts, counterparty details, legal review status), 2) Signature reminder email — polite but clear, with context of what it is and why it's time-sensitive, 3) Follow-up sequence: day 1, day 3, day 7 — each progressively more urgent, 4) Tracking template: document name, type, counterparty, sent date, due date, status, follow-up count. Tone: respectful of CEO's time but protecting the company's deadlines.`,
   },
+  {
+    id: 40,
+    // AUDIT NOTE: diet rate 45 PLN/day verified March 2025 — check quarterly
+    title: "Rozliczenie delegacji krajowej",
+    description: "Druk rozliczenia z dietami 45 zł/dobę i kosztami przejazdu",
+    tag: "Any AI",
+    category: "Admin & Operations",
+    categoryIcon: "📋",
+    prompt: `Przygotuj rozliczenie delegacji służbowej krajowej. Dane: cel i miejsce wyjazdu: [MIEJSCE], data wyjazdu: [DATA OD], data powrotu: [DATA DO], godzina wyjazdu: [GODZINA], godzina powrotu: [GODZINA]. Środek transportu: [własny samochód / służbowy / PKP / bus]. Koszty: noclegi [KWOTA] PLN (faktury), inne wydatki: [OPIS I KWOTA]. Stawki: dieta krajowa 45 zł/doba (stawka obowiązująca marzec 2025 — zweryfikuj aktualność). Przygotuj: 1) Wyliczenie liczby dób i należnej diety, 2) Tabelę wszystkich kosztów do refundacji, 3) Podsumowanie kwoty do wypłaty pracownikowi. Pracownik: [IMIĘ NAZWISKO], stanowisko: [STANOWISKO].`,
+  },
   // ── Accounting & Audit ──
   {
     id: 17,
@@ -302,10 +387,13 @@ const LIBRARY: LibraryPrompt[] = [
 
 type Lang = "en" | "pl";
 
-const CATEGORIES_EN = ["All", "Finance & FP&A", "Sales", "Admin & Operations", "Accounting & Audit", "Career & Students", "Employers & HR"];
-const CATEGORIES_PL = ["Wszystkie", "Finanse i FP&A", "Sprzedaż", "Admin i Operacje", "Księgowość i Audyt", "Kariera i Studenci", "Pracodawcy i HR"];
+const CATEGORIES_EN = ["All", "Official Correspondence", "AR / AP", "Accounting Documents", "Admin & Operations", "Finance & FP&A", "Accounting & Audit", "Sales", "Career & Students", "Employers & HR"];
+const CATEGORIES_PL = ["Wszystkie", "Korespondencja urzędowa", "AR / AP — Należności i Zobowiązania", "Dokumenty księgowe", "Admin i Operacje", "Finanse i FP&A", "Księgowość i Audyt", "Sprzedaż", "Kariera i Studenci", "Pracodawcy i HR"];
 const CATEGORY_MAP: Record<string, string> = {
   "All": "Wszystkie",
+  "Official Correspondence": "Korespondencja urzędowa",
+  "AR / AP": "AR / AP — Należności i Zobowiązania",
+  "Accounting Documents": "Dokumenty księgowe",
   "Finance & FP&A": "Finanse i FP&A",
   "Sales": "Sprzedaż",
   "Admin & Operations": "Admin i Operacje",
@@ -446,11 +534,17 @@ export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryPr
     return matchCat && matchSearch;
   });
 
-  // group by category preserving order
+  // group by category, then sort by defined category order
   const grouped: Record<string, LibraryPrompt[]> = {};
   filtered.forEach((p) => {
     if (!grouped[p.category]) grouped[p.category] = [];
     grouped[p.category].push(p);
+  });
+  const categoryOrder = CATEGORIES_EN.filter((c) => c !== "All");
+  const sortedGroupEntries = Object.entries(grouped).sort(([a], [b]) => {
+    const ai = categoryOrder.indexOf(a);
+    const bi = categoryOrder.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
   });
 
   return (
@@ -506,7 +600,7 @@ export default function PromptLibrary({ onPolish, lang = "en" }: PromptLibraryPr
           {lang === "pl" ? "Nie znaleziono promptów." : "No prompts found."}
         </p>
       ) : (
-        Object.entries(grouped).map(([category, prompts]) => {
+        sortedGroupEntries.map(([category, prompts]) => {
           const icon = prompts[0].categoryIcon;
           return (
             <div key={category} style={{ marginBottom: 32 }}>
