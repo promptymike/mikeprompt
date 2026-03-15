@@ -20,39 +20,45 @@ interface Props {
 
 const T = {
   en: {
-    welcome: "Hi! I'm Mike 👋 Your AI office assistant. Tell me what you need — an email, formal letter, report, summary. Just write naturally, no prompts needed.",
+    headline: "Hi! I'm Mike.",
+    subline: "Your AI office assistant. Tell me what to write — email, letter, report.",
     thinking: "Mike is thinking...",
     copy: "📋 Copy",
     copied: "✓ Copied!",
     placeholder: "Type a message…",
-    safe_mode: "🔒 Safe mode",
+    privacy_off: "🔒 Privacy: data is NOT masked — click to enable protection",
+    privacy_on: "🛡️ Privacy active: tax IDs, amounts masked locally before AI",
     paywall_title: "⏰ Mike gave it his all today.",
     paywall_body: "You've used your 15 free messages.\nCome back tomorrow — or work with Mike without limits.",
     paywall_btn: "🚀 Unlock Pro for 10 PLN/month",
     chips: [
-      { label: "📧 Client email", prompt: "Write a professional client email" },
-      { label: "📄 Formal letter", prompt: "Help me write a formal business letter" },
-      { label: "📊 Monthly report", prompt: "Prepare a monthly report template" },
-      { label: "💰 Payment reminder", prompt: "Write a polite but firm payment reminder" },
-      { label: "📋 Meeting minutes", prompt: "Help me write meeting minutes" },
+      { icon: "📧", label: "Email about overdue invoice", prompt: "Write a professional email about an overdue invoice" },
+      { icon: "📄", label: "Formal letter to authority", prompt: "Help me write a formal letter to a government authority" },
+      { icon: "📊", label: "Monthly report for manager", prompt: "Prepare a monthly report for my manager" },
+      { icon: "💰", label: "Payment reminder", prompt: "Write a polite but firm payment reminder" },
+      { icon: "📋", label: "Meeting minutes", prompt: "Help me write meeting minutes" },
+      { icon: "✉️", label: "Professional business email", prompt: "Write a professional business email" },
     ],
   },
   pl: {
-    welcome: "Cześć! Jestem Mike 👋 Twój asystent biurowy AI. Napisz mi co potrzebujesz — maila, pismo do urzędu, raport, podsumowanie. Zacznij od razu, bez żadnych promptów.",
+    headline: "Cześć! Jestem Mike.",
+    subline: "Twój asystent biurowy AI. Powiedz mi co napisać — maila, pismo, raport.",
     thinking: "Mike przygotowuje odpowiedź...",
     copy: "📋 Kopiuj",
     copied: "✓ Skopiowano!",
     placeholder: "Napisz wiadomość…",
-    safe_mode: "🔒 Bezpieczny tryb",
+    privacy_off: "🔒 Prywatność: dane NIE są maskowane — kliknij aby włączyć ochronę",
+    privacy_on: "🛡️ Prywatność aktywna: NIP, PESEL i kwoty są maskowane lokalnie",
     paywall_title: "⏰ Mike dał z siebie wszystko na dziś.",
     paywall_body: "Wykorzystałeś 15 darmowych wiadomości.\nWróć jutro — lub pracuj z Mike'iem bez limitów.",
     paywall_btn: "🚀 Odblokuj Pro za 10 zł/mc",
     chips: [
-      { label: "📧 Mail do klienta", prompt: "Napisz profesjonalny mail do klienta" },
-      { label: "🏛️ Pismo do US", prompt: "Pomóż mi napisać pismo do Urzędu Skarbowego" },
-      { label: "📊 Raport miesięczny", prompt: "Przygotuj szablon raportu miesięcznego" },
-      { label: "💰 Ponaglenie zapłaty", prompt: "Napisz uprzejme ale stanowcze ponaglenie do zapłaty" },
-      { label: "📋 Protokół spotkania", prompt: "Pomóż mi napisać protokół ze spotkania" },
+      { icon: "📧", label: "Napisz maila o zaległej fakturze", prompt: "Napisz profesjonalny mail do klienta o zaległej fakturze" },
+      { icon: "🏛️", label: "Pismo do Urzędu Skarbowego", prompt: "Pomóż mi napisać pismo do Urzędu Skarbowego" },
+      { icon: "📊", label: "Raport miesięczny dla szefa", prompt: "Przygotuj raport miesięczny dla przełożonego" },
+      { icon: "💰", label: "Ponaglenie zapłaty do klienta", prompt: "Napisz uprzejme ale stanowcze ponaglenie zapłaty" },
+      { icon: "📋", label: "Protokół ze spotkania", prompt: "Pomóż mi napisać protokół ze spotkania" },
+      { icon: "🏢", label: "Wniosek do ZUS / KAS", prompt: "Napisz wniosek lub pismo do ZUS lub KAS" },
     ],
   },
 };
@@ -151,8 +157,8 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           for (const line of lines) {
             if (line.startsWith("data: ") && !line.includes("[DONE]")) {
               const encoded = line.slice(6);
-              const text = decodeURIComponent(encoded);
-              assistantContent += text;
+              const decoded = decodeURIComponent(encoded);
+              assistantContent += decoded;
               if (firstChunk) {
                 setIsThinking(false);
                 firstChunk = false;
@@ -182,8 +188,6 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
   );
 
   const handleChip = (prompt: string) => {
-    setInput(prompt);
-    // Trigger send on next tick so state updates first
     setTimeout(() => sendMessage(prompt), 0);
   };
 
@@ -209,6 +213,10 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
           40% { opacity: 1; transform: scale(1); }
         }
+        @keyframes mikepulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255,110,64,0.3); }
+          50% { box-shadow: 0 0 0 12px rgba(255,110,64,0); }
+        }
         .mike-dot {
           width: 8px; height: 8px; border-radius: 50%;
           background: #FF6E40; display: inline-block;
@@ -217,6 +225,27 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
         .copy-btn { opacity: 0; transition: opacity 0.15s; }
         @media (hover: none) { .copy-btn { opacity: 1 !important; } }
         .assistant-bubble:hover .copy-btn { opacity: 1; }
+        .mike-chip {
+          background: var(--c-card);
+          border: 1px solid var(--c-card-border);
+          border-radius: 14px;
+          padding: 14px 18px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--c-text1);
+          cursor: pointer;
+          transition: all 0.18s;
+          text-align: left;
+          font-family: inherit;
+          width: 100%;
+        }
+        .mike-chip:hover {
+          border-color: #FF8A65;
+          background: rgba(255,110,64,0.04);
+        }
       `}</style>
 
       {/* Messages area */}
@@ -236,41 +265,83 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
-              flex: 1,
-              gap: 20,
               paddingTop: 40,
+              paddingBottom: 8,
             }}
           >
-            <p
+            {/* Avatar */}
+            <div
               style={{
-                textAlign: "center",
-                color: "var(--c-text3)",
-                maxWidth: 400,
-                margin: "0 auto",
-                fontSize: 15,
-                lineHeight: 1.65,
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
+                animation: "mikepulse 2.5s ease-in-out infinite",
+                flexShrink: 0,
               }}
             >
-              {t.welcome}
+              <span
+                style={{
+                  fontFamily: "Fraunces, Georgia, serif",
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: "white",
+                  lineHeight: 1,
+                }}
+              >
+                M
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h2
+              style={{
+                fontFamily: "Fraunces, Georgia, serif",
+                fontSize: 22,
+                fontWeight: 700,
+                margin: "0 0 8px",
+                color: "var(--c-text1)",
+              }}
+            >
+              {t.headline}
+            </h2>
+
+            {/* Subline */}
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--c-text3)",
+                maxWidth: 320,
+                textAlign: "center",
+                margin: "0 0 28px",
+                lineHeight: 1.6,
+              }}
+            >
+              {t.subline}
             </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 480 }}>
+
+            {/* Quick action chips — 2-column grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 10,
+                maxWidth: 480,
+                width: "100%",
+              }}
+            >
               {t.chips.map((chip) => (
                 <button
                   key={chip.label}
+                  className="mike-chip"
                   onClick={() => handleChip(chip.prompt)}
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: 20,
-                    border: "1px solid var(--c-card-border)",
-                    background: "var(--c-card)",
-                    color: "var(--c-text2)",
-                    fontSize: 13,
-                    cursor: "pointer",
-                    transition: "border-color 0.15s",
-                  }}
                 >
-                  {chip.label}
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{chip.icon}</span>
+                  <span>{chip.label}</span>
                 </button>
               ))}
             </div>
@@ -377,6 +448,29 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
           background: "var(--c-card)",
         }}
       >
+        {/* Privacy badge — always visible */}
+        <div
+          onClick={() => setAnonymize((v) => !v)}
+          style={{
+            background: anonymize ? "rgba(67,160,71,0.08)" : "rgba(255,110,64,0.04)",
+            border: `1px solid ${anonymize ? "rgba(67,160,71,0.3)" : "rgba(255,110,64,0.2)"}`,
+            borderRadius: 10,
+            padding: "8px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 12,
+            color: anonymize ? "#2E7D32" : "#E65100",
+            fontWeight: 500,
+            marginBottom: 10,
+            cursor: "pointer",
+            userSelect: "none",
+            transition: "all 0.2s",
+          }}
+        >
+          {anonymize ? t.privacy_on : t.privacy_off}
+        </div>
+
         {atLimit ? (
           <div
             style={{
@@ -411,93 +505,69 @@ export default function MikeChat({ lang, profile, currentUser }: Props) {
             </a>
           </div>
         ) : (
-          <>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  resizeTextarea();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder={t.placeholder}
-                rows={1}
-                style={{
-                  flex: 1,
-                  minHeight: 44,
-                  maxHeight: 160,
-                  resize: "none",
-                  borderRadius: 12,
-                  border: "1px solid var(--c-card-border)",
-                  background: "var(--c-bg)",
-                  color: "var(--c-text1)",
-                  padding: "11px 14px",
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  outline: "none",
-                  fontFamily: "inherit",
-                  overflowY: "auto",
-                }}
-              />
-              <button
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || isStreaming}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  border: "none",
-                  background:
-                    !input.trim() || isStreaming
-                      ? "var(--c-card-border)"
-                      : "linear-gradient(135deg, #FF6E40, #FF8A65)",
-                  color: "white",
-                  fontSize: 16,
-                  cursor: !input.trim() || isStreaming ? "default" : "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  transition: "background 0.15s",
-                }}
-              >
-                ▶
-              </button>
-            </div>
-
-            {/* Compact safe-mode toggle */}
-            <div
-              onClick={() => setAnonymize((v) => !v)}
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                resizeTextarea();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder={t.placeholder}
+              rows={1}
               style={{
-                marginTop: 8,
-                display: "inline-flex",
+                flex: 1,
+                minHeight: 44,
+                maxHeight: 160,
+                resize: "none",
+                borderRadius: 12,
+                border: "1px solid var(--c-card-border)",
+                background: "var(--c-bg)",
+                color: "var(--c-text1)",
+                padding: "11px 14px",
+                fontSize: 14,
+                lineHeight: 1.5,
+                outline: "none",
+                fontFamily: "inherit",
+                overflowY: "auto",
+              }}
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || isStreaming}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                border: "none",
+                background:
+                  !input.trim() || isStreaming
+                    ? "var(--c-card-border)"
+                    : "linear-gradient(135deg, #FF6E40, #FF8A65)",
+                color: "white",
+                fontSize: 16,
+                cursor: !input.trim() || isStreaming ? "default" : "pointer",
+                display: "flex",
                 alignItems: "center",
-                gap: 6,
-                cursor: "pointer",
-                userSelect: "none",
-                fontSize: 12,
-                color: anonymize ? "#FF6E40" : "var(--c-text4)",
-                transition: "color 0.15s",
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "background 0.15s",
               }}
             >
-              <input
-                type="checkbox"
-                checked={anonymize}
-                onChange={(e) => { e.stopPropagation(); setAnonymize(e.target.checked); }}
-                style={{ width: 13, height: 13, accentColor: "#FF6E40", cursor: "pointer" }}
-              />
-              {t.safe_mode}
-            </div>
-          </>
+              ▶
+            </button>
+          </div>
         )}
       </div>
 
+      {/* currentUser available for future auth-gating */}
+      {void currentUser}
     </div>
   );
 }
