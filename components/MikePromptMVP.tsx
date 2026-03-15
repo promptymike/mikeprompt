@@ -23,10 +23,10 @@ const T = {
     tab_usecases: "💡 Use Cases",
     tab_models: "🧠 Models",
     tab_history: "📂 History",
-    tab_about: "👋 About",
+    tab_about: "💡 Why Mike?",
     polished_today_plural: "prompts polished today",
     polished_today_single: "prompt polished today",
-    free_left: "free polishes left",
+    free_left: "free polishes left today",
     sign_up_more: "Sign up for more",
     headline_pre: "AI that makes ",
     headline_accent: "YOU",
@@ -79,10 +79,10 @@ const T = {
     tab_usecases: "💡 Zastosowania",
     tab_models: "🧠 Modele",
     tab_history: "📂 Historia",
-    tab_about: "👋 O nas",
+    tab_about: "💡 Dlaczego Mike?",
     polished_today_plural: "promptów wypolerowanych dziś",
     polished_today_single: "prompt wypolerowany dziś",
-    free_left: "darmowych polerów",
+    free_left: "darmowych polerów dziś",
     sign_up_more: "Zarejestruj się po więcej",
     headline_pre: "Twoje maile i raporty.",
     headline_accent: "10x lepsze",
@@ -383,7 +383,7 @@ const MikePromptMVP = () => {
   const [feedback, setFeedback] = useState<"positive" | "negative" | null>(null);
   const [selectedChat, setSelectedChat] = useState("ChatGPT");
   const [selectedProduct, setSelectedProduct] = useState("General");
-  const [activeTab, setActiveTab] = useState<"polish" | "anonymize" | "library" | "usecases" | "models" | "history" | "about">("polish");
+  const [activeTab, setActiveTab] = useState<"polish" | "anonymize" | "library" | "usecases" | "history" | "about">("polish");
   const [currentUser, setCurrentUser] = useState<{ id: string; email?: string } | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [dark, setDark] = useState(false);
@@ -395,7 +395,7 @@ const MikePromptMVP = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [anonymize, setAnonymize] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
-  const MAX_FREE = 5;
+  const MAX_FREE = 15;
 
   // MUST be first — registers before other onAuthStateChange listeners
   // so the SDK emits SIGNED_IN to this handler while the hash is still in the URL
@@ -606,7 +606,6 @@ const MikePromptMVP = () => {
     ["anonymize", t.tab_anonymize],
     ["library", t.tab_library],
     ["usecases", t.tab_usecases],
-    ["models", t.tab_models],
     ["history", t.tab_history],
     ["about", t.tab_about],
   ] as const;
@@ -770,7 +769,8 @@ const MikePromptMVP = () => {
       {showOnboarding && (
         <div style={{
           position: "fixed",
-          bottom: isMobile ? 16 : 24,
+          pointerEvents: isMobile ? "none" : "auto",
+          bottom: isMobile ? 80 : 24,
           left: isMobile ? 12 : "50%",
           right: isMobile ? 12 : "auto",
           transform: isMobile ? "none" : "translateX(-50%)",
@@ -792,7 +792,7 @@ const MikePromptMVP = () => {
               {lang === "pl" ? "Uzupełnij rolę i branżę — 30 sekund" : "Add your role and industry — 30 seconds"}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0, pointerEvents: "auto" }}>
             <button
               onClick={() => {
                 setShowOnboarding(false);
@@ -824,7 +824,7 @@ const MikePromptMVP = () => {
       {authToast === "success" && (
         <div style={{
           position: "fixed",
-          bottom: isMobile ? 16 : 24,
+          bottom: isMobile ? 80 : 24,
           left: isMobile ? 12 : "50%",
           right: isMobile ? 12 : "auto",
           transform: isMobile ? "none" : "translateX(-50%)",
@@ -867,12 +867,9 @@ const MikePromptMVP = () => {
               setInput(prompt); setActiveTab("polish");
               setShowResults(false); setOptimized(""); setFixes([]);
             }}
-            onNavigate={(tab) => setActiveTab(tab as "polish" | "anonymize" | "library" | "usecases" | "models" | "history" | "about")}
+            onNavigate={(tab) => setActiveTab(tab as "polish" | "anonymize" | "library" | "usecases" | "history" | "about")}
           />
         )}
-
-        {/* Models tab */}
-        {activeTab === "models" && <ModelComparison lang={lang} />}
 
         {/* Use Cases tab */}
         {activeTab === "usecases" && (
@@ -1019,6 +1016,33 @@ const MikePromptMVP = () => {
               </p>
             </div>
 
+            {/* Anonymize safe-mode banner */}
+            <div
+              onClick={() => setAnonymize(v => !v)}
+              style={{
+                margin: "0 16px 0",
+                padding: "10px 16px",
+                borderRadius: 10,
+                background: anonymize ? "rgba(255,110,64,0.08)" : "rgba(255,110,64,0.04)",
+                border: `1px solid ${anonymize ? "rgba(255,110,64,0.3)" : "rgba(255,110,64,0.2)"}`,
+                display: "flex", alignItems: "flex-start", gap: 10,
+                cursor: "pointer", userSelect: "none",
+                transition: "all 0.15s",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={anonymize}
+                onChange={e => { e.stopPropagation(); setAnonymize(e.target.checked); }}
+                style={{ width: 15, height: 15, accentColor: "#FF6E40", cursor: "pointer", marginTop: 2, flexShrink: 0 }}
+              />
+              <span style={{ fontSize: 12, color: "var(--c-text2)", lineHeight: 1.55 }}>
+                {lang === "pl"
+                  ? "🔒 Bezpieczny tryb księgowy: automatycznie ukrywamy NIP, PESEL, kwoty i nazwy firm przed wysłaniem do AI"
+                  : "🔒 Accountant safe mode: we automatically mask tax IDs, amounts and company names before sending to AI"}
+              </span>
+            </div>
+
             {/* Action bar */}
             <div style={{
               padding: isMobile ? "12px 16px" : "14px 24px", borderTop: "1px solid var(--c-sep)",
@@ -1031,24 +1055,6 @@ const MikePromptMVP = () => {
                 <div style={{ fontSize: 13, color: "var(--c-text4)" }}>
                   {input.length > 0 ? t.chars_hint(input.length) : t.paste_hint}
                 </div>
-                {/* Anonymize checkbox */}
-                <label style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  fontSize: 12, color: "var(--c-text3)", cursor: "pointer",
-                  userSelect: "none",
-                  padding: "4px 8px", borderRadius: 8,
-                  background: anonymize ? "rgba(255,110,64,0.06)" : "transparent",
-                  border: `1px solid ${anonymize ? "rgba(255,110,64,0.2)" : "transparent"}`,
-                  transition: "all 0.15s",
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={anonymize}
-                    onChange={e => setAnonymize(e.target.checked)}
-                    style={{ width: 14, height: 14, accentColor: "#FF6E40", cursor: "pointer" }}
-                  />
-                  🔒 {lang === "pl" ? "Anonimizuj" : "Anonymize"}
-                </label>
               </div>
               <button
                 onClick={optimizePrompt}

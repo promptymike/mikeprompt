@@ -4,8 +4,8 @@ type Lang = "en" | "pl";
 
 const T = {
   en: {
-    hero_title: "Built by people who actually do the work.",
-    hero_body: "MikePrompt was created by senior auditors, financial controllers, and startup operators who got tired of wasting time on bad AI prompts.",
+    hero_title: "Why Mike, not just ChatGPT?",
+    hero_body: "Mike understands your professional context. It knows your role, your tools, and your industry — giving you prompts that actually work, not generic AI output.",
     story_label: "Our story",
     story_p1_pre: "We spent years in Big 4 audit and finance at award-winning startups. We wrote thousands of reports, emails, and analyses. When AI arrived, we saw everyone struggling with the same problem — they knew ",
     story_p1_what: "WHAT",
@@ -34,11 +34,18 @@ const T = {
     for_all_label: "For everyone",
     for_all: "MikePrompt is for every professional who uses AI at work — finance, sales, admin, accounting, management, HR, students. We believe AI should make humans better, not replace them. Every feature we build answers one question:",
     for_all_strong: " does this help someone do their best work?",
+    trust_label: "Privacy & Security",
+    trust_items: [
+      "✅ Data stays in EU (Supabase servers: Ireland)",
+      "✅ We never train AI on your prompts",
+      "✅ GDPR and AI Act compliant",
+      "✅ Client data masked locally before reaching AI",
+    ],
     footer: "Made with 🧡 in Warsaw, Poland. For humans everywhere.",
   },
   pl: {
-    hero_title: "Stworzony przez ludzi, którzy naprawdę tę pracę wykonują.",
-    hero_body: "MikePrompt powstał dzięki starszym audytorom, kontrolerom finansowym i operatorom startupów, którzy mieli dość marnowania czasu na słabe prompty AI.",
+    hero_title: "Dlaczego Mike, nie zwykły ChatGPT?",
+    hero_body: "Mike zna polskie realia biurowe. Wie czym różni się faktura korygująca od noty, rozumie kontekst US i ZUS, i dba o RODO — bo Twoje dane klientów nie mogą wyciec do Silicon Valley.",
     story_label: "Nasza historia",
     story_p1_pre: "Spędziliśmy lata w audycie Big 4 i finansach w nagradzanych startupach. Napisaliśmy tysiące raportów, emaili i analiz. Kiedy przyszło AI, widzieliśmy, jak wszyscy borykają się z tym samym problemem — wiedzieli ",
     story_p1_what: "CO",
@@ -67,6 +74,13 @@ const T = {
     for_all_label: "Dla każdego",
     for_all: "MikePrompt jest dla każdego profesjonalisty, który używa AI w pracy — finanse, sprzedaż, administracja, księgowość, zarządzanie, HR, studenci. Wierzymy, że AI powinno czynić ludzi lepszymi, nie zastępować ich. Każda funkcja, którą budujemy, odpowiada na jedno pytanie:",
     for_all_strong: " czy to pomaga komuś wykonywać swoją najlepszą pracę?",
+    trust_label: "Prywatność i bezpieczeństwo",
+    trust_items: [
+      "✅ Dane nie opuszczają UE (serwery Supabase: Irlandia)",
+      "✅ Nie trenujemy AI na Twoich promptach",
+      "✅ Zgodne z RODO i AI Act",
+      "✅ Dane klientów maskowane lokalnie — zanim trafią do AI",
+    ],
     footer: "Zrobione z 🧡 w Warszawie, Polska. Dla ludzi wszędzie.",
   },
 };
@@ -217,6 +231,22 @@ export default function About({ lang = "en" }: { lang?: Lang }) {
           {t.for_all}
           <strong style={{ color: "var(--c-text1)" }}>{t.for_all_strong}</strong>
         </p>
+      </div>
+
+      {/* GDPR trust block */}
+      <div style={{
+        background: "var(--c-green-bg, rgba(46,125,50,0.06))",
+        border: "1px solid var(--c-green-border, rgba(46,125,50,0.18))",
+        borderRadius: 18, padding: "22px 30px", marginBottom: 20,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-green-text, #2E7D32)", textTransform: "uppercase", letterSpacing: "0.7px", marginBottom: 14 }}>
+          {t.trust_label}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {t.trust_items.map((item) => (
+            <div key={item} style={{ fontSize: 14, color: "var(--c-text2)", lineHeight: 1.5 }}>{item}</div>
+          ))}
+        </div>
       </div>
 
       {/* Section footer */}
